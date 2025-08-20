@@ -20,8 +20,8 @@ export default function Splash() {
               console.log('Splash: Shipper chưa được xét duyệt, chuyển đến trang chờ');
               router.replace('/application');
             } else {
-              console.log('Splash: Shipper đã được xét duyệt, vào giao diện chính');
-              router.replace('/(tabs)');
+              console.log('Splash: Shipper đã được xét duyệt, vào trang đơn hàng shipper');
+              router.replace('/shipper-orders');
             }
           } else {
             console.log('Splash: Không phải shipper, vào giao diện chính');

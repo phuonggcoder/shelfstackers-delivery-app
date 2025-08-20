@@ -1,17 +1,46 @@
 import BottomTabs from '@/components/BottomTabs';
+import { useAuth } from '@/lib/auth';
+import { shipperApi } from '@/lib/shipperApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 export default function Application() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
+
+  useEffect(() => {
+    let mounted = true;
+    // Poll every 6 seconds (short enough for demo); stop when verified
+    const check = async () => {
+      try {
+        // refreshUser will update context, but to avoid re-creating this effect when
+        // context.user changes we fetch the latest user directly from the API here.
+        await refreshUser();
+        if (!mounted) return;
+        const latest = await shipperApi.getCurrentUser();
+        if (!mounted) return;
+        if (latest && latest.shipper_verified === true) {
+          clearInterval(id);
+          router.replace('/shipper-orders');
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    const id = setInterval(check, 6000);
+    // also run immediately
+    check();
+    return () => { mounted = false; clearInterval(id); };
+  }, [refreshUser, router]);
 
   return (
     <SafeAreaView style={styles.container}>

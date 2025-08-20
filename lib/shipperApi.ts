@@ -177,25 +177,83 @@ export const shipperApi = {
 
   // Shipper Endpoints - using /api/shipper prefix
   async getOrders(query = '') {
-    return this.request(`${API_ENDPOINTS.GET_ORDERS}${query ? '?' + query : ''}`);
+    const q = query ? '?' + query : '';
+    const primary = `${API_ENDPOINTS.GET_ORDERS}${q}`;
+    try {
+      return await this.request(primary);
+  } catch (err) {
+      // Fallbacks: some backends expose orders under /api/orders (with /my for current user)
+      const fallbacks = [`/api/orders/my${q}`, `/api/orders${q}`];
+      for (const path of fallbacks) {
+        try {
+          const res = await this.request(path);
+          return res;
+    } catch {
+          // ignore and try next
+        }
+      }
+      throw err;
+    }
   },
 
   async getOrder(id: string) {
-    return this.request(`${API_ENDPOINTS.GET_ORDER}/${id}`);
+    const primary = `${API_ENDPOINTS.GET_ORDER}/${id}`;
+    try {
+      return await this.request(primary);
+    } catch (err) {
+      // fallback to /api/orders/:id
+      try {
+        return await this.request(`/api/orders/${id}`);
+      } catch {
+        throw err;
+      }
+    }
   },
 
   async acceptOrder(id: string) {
-    return this.request(`${API_ENDPOINTS.ACCEPT_ORDER}/${id}/accept`, { method: 'POST' });
+    const primary = `${API_ENDPOINTS.ACCEPT_ORDER}/${id}/accept`;
+    try {
+      return await this.request(primary, { method: 'POST' });
+    } catch {
+      // fallback: try /api/orders/:id/accept or set status via /api/orders/:id/status
+      try {
+        return await this.request(`/api/orders/${id}/accept`, { method: 'POST' });
+      } catch {
+        return this.request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ order_status: 'OutForDelivery' }) });
+      }
+    }
   },
 
   async rejectOrder(id: string) {
-    return this.request(`${API_ENDPOINTS.REJECT_ORDER}/${id}/reject`, { method: 'POST' });
+    const primary = `${API_ENDPOINTS.REJECT_ORDER}/${id}/reject`;
+    try {
+      return await this.request(primary, { method: 'POST' });
+    } catch {
+      try {
+        return await this.request(`/api/orders/${id}/reject`, { method: 'POST' });
+      } catch {
+        return this.request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ order_status: 'Cancelled' }) });
+      }
+    }
   },
 
   async updateStatus(id: string, body: any) {
-    return this.request(`${API_ENDPOINTS.UPDATE_STATUS}/${id}/status`, { 
-      method: 'PATCH', 
-      body: JSON.stringify(body) 
-    });
+    const primary = `${API_ENDPOINTS.UPDATE_STATUS}/${id}/status`;
+    try {
+      return await this.request(primary, {
+        method: 'PATCH',
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      // fallback to general orders status endpoint
+      try {
+        return await this.request(`/api/orders/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify(body)
+        });
+      } catch {
+          throw err;
+        }
+    }
   },
 };

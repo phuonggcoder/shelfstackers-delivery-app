@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { shipperApi } from './shipperApi';
 
 // Lightweight storage wrapper: try SecureStore first, fallback to AsyncStorage.
 let SecureStore: any = null;
 try {
   // require at runtime to avoid Metro/native init errors in certain dev environments
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+   
   SecureStore = require('expo-secure-store');
 } catch (e) {
   SecureStore = null;
@@ -71,6 +71,7 @@ const AuthContext = createContext<{
   signIn: (data: { token: string; refreshToken: string; user?: User }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAuthToken: () => Promise<boolean>;
+  refreshUser: () => Promise<boolean>;
 }>({ 
   token: null, 
   refreshToken: null,
@@ -78,7 +79,8 @@ const AuthContext = createContext<{
   loading: true, 
   signIn: async () => {}, 
   signOut: async () => {},
-  refreshAuthToken: async () => false
+  refreshAuthToken: async () => false,
+  refreshUser: async () => false
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -111,34 +113,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     })();
   }, []);
 
-  async function signIn({ token: t, refreshToken: rt, user: u }: { token: string; refreshToken: string; user?: User }) {
+  const signIn = useCallback(async ({ token: t, refreshToken: rt, user: u }: { token: string; refreshToken: string; user?: User }) => {
     setToken(t);
     setRefreshToken(rt);
     shipperApi.setToken(t);
     setUser(u || null);
-    
+
     await safeSetItem(TOKEN_KEY, t);
     await safeSetItem(REFRESH_TOKEN_KEY, rt);
     if (u) await safeSetItem(USER_KEY, JSON.stringify(u));
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     setToken(null);
     setRefreshToken(null);
     shipperApi.setToken(null);
     setUser(null);
-    
+
     await safeDeleteItem(TOKEN_KEY);
     await safeDeleteItem(REFRESH_TOKEN_KEY);
     await safeDeleteItem(USER_KEY);
-  }
+  }, []);
 
-  async function refreshAuthToken(): Promise<boolean> {
+  const refreshAuthToken = useCallback(async (): Promise<boolean> => {
     if (!refreshToken) return false;
-    
+
     try {
       const response = await shipperApi.refreshToken(refreshToken);
-      if (response.success) {
+      if (response && response.access_token) {
         await signIn({
           token: response.access_token,
           refreshToken: response.refresh_token,
@@ -152,18 +154,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await signOut();
     }
     return false;
-  }
+  }, [refreshToken, signIn, signOut, user]);
+
+  // Refresh current user profile from API and persist it
+  const refreshUser = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await shipperApi.getCurrentUser();
+      if (res) {
+        setUser(res);
+        await safeSetItem(USER_KEY, JSON.stringify(res));
+        return true;
+      }
+    } catch (e) {
+      console.warn('refreshUser failed', e);
+    }
+    return false;
+  }, []);
+
+  const value = useMemo(() => ({
+    token,
+    refreshToken,
+    user,
+    loading,
+    signIn,
+    signOut,
+    refreshAuthToken,
+    refreshUser
+  }), [token, refreshToken, user, loading, signIn, signOut, refreshAuthToken, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ 
-      token, 
-      refreshToken,
-      user, 
-      loading, 
-      signIn, 
-      signOut,
-      refreshAuthToken
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

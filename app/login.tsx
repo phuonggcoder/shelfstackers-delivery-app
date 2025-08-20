@@ -52,7 +52,7 @@ export default function Login() {
           // Mặc định shipper chưa được xét duyệt nếu không có trường này
           const isShipperVerified = response.user.shipper_verified === true;
           
-          if (!isShipperVerified) {
+    if (!isShipperVerified) {
             // Chưa được xét duyệt, chuyển đến trang chờ
             await signIn({
               token: response.access_token,
@@ -66,7 +66,7 @@ export default function Login() {
               [
                 {
                   text: 'OK',
-                  onPress: () => router.replace('/application')
+      onPress: () => router.replace('/application')
                 }
               ]
             );
@@ -83,8 +83,8 @@ export default function Login() {
               'Đăng nhập thành công!',
               [
                 {
-                  text: 'OK',
-                  onPress: () => router.replace('/(tabs)')
+      text: 'OK',
+      onPress: () => router.replace('/shipper-orders')
                 }
               ]
             );
