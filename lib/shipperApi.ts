@@ -75,6 +75,7 @@ export const shipperApi = {
     gender?: string;
     birth_date?: string;
     avatar?: string;
+    roles?: string[];
   }) {
     return this.request(API_ENDPOINTS.REGISTER, { 
       method: 'POST', 

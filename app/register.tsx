@@ -23,7 +23,8 @@ export default function Register() {
     confirmPassword: '',
     full_name: '',
     phone_number: '',
-    gender: 'other'
+    gender: 'other',
+    roles: ['shipper']
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -68,27 +69,87 @@ export default function Register() {
         password: formData.password,
         full_name: formData.full_name || undefined,
         phone_number: formData.phone_number || undefined,
-        gender: formData.gender || undefined
+        gender: formData.gender || undefined,
+        roles: formData.roles
       });
 
       if (response.access_token) {
-        // Đăng ký thành công, tự động đăng nhập
-        await signIn({
-          token: response.access_token,
-          refreshToken: response.refresh_token,
-          user: response.user
-        });
+        // Debug: Log response để kiểm tra
+        console.log('=== DEBUG REGISTER RESPONSE ===');
+        console.log('Full response:', response);
+        console.log('User object:', response.user);
+        console.log('User roles:', response.user?.roles);
+        console.log('Shipper verified:', response.user?.shipper_verified);
+        console.log('================================');
+        
+        // Kiểm tra xem shipper đã được xét duyệt chưa
+        if (response.user && response.user.roles && response.user.roles.includes('shipper')) {
+          // Nếu là shipper, kiểm tra trạng thái xét duyệt
+          // Mặc định shipper mới đăng ký sẽ chưa được xét duyệt
+          const isShipperVerified = response.user.shipper_verified === true;
+          
+          if (!isShipperVerified) {
+            // Chưa được xét duyệt, chuyển đến trang chờ
+            console.log('Shipper chưa được xét duyệt, chuyển đến trang chờ');
+            
+            await signIn({
+              token: response.access_token,
+              refreshToken: response.refresh_token,
+              user: response.user
+            });
+            
+            Alert.alert(
+              'Đăng ký thành công!', 
+              'Tài khoản shipper của bạn đã được tạo. Vui lòng đợi admin xét duyệt.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/application')
+                }
+              ]
+            );
+          } else {
+            // Đã được xét duyệt, vào giao diện chính
+            console.log('Shipper đã được xét duyệt, vào giao diện chính');
+            
+            await signIn({
+              token: response.access_token,
+              refreshToken: response.refresh_token,
+              user: response.user
+            });
 
-        Alert.alert(
-          'Thành công', 
-          'Tài khoản đã được tạo và đăng nhập thành công!',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(tabs)')
-            }
-          ]
-        );
+            Alert.alert(
+              'Thành công', 
+              'Tài khoản đã được tạo và đăng nhập thành công!',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/(tabs)')
+                }
+              ]
+            );
+          }
+        } else {
+          // Không phải shipper, xử lý bình thường
+          console.log('Không phải shipper, xử lý bình thường');
+          
+          await signIn({
+            token: response.access_token,
+            refreshToken: response.refresh_token,
+            user: response.user
+          });
+
+          Alert.alert(
+            'Thành công', 
+            'Tài khoản đã được tạo và đăng nhập thành công!',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(tabs)')
+              }
+            ]
+          );
+        }
       } else {
         Alert.alert('Lỗi', 'Đăng ký thất bại. Vui lòng thử lại.');
       }

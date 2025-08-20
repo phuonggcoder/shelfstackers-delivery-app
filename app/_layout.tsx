@@ -21,6 +21,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="application" options={{ headerShown: false }} />
           <Stack.Screen name="splash" options={{ headerShown: false }} />
           {/* point to the (tabs) group so the Stack can resolve the tabs layout */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -39,22 +39,75 @@ export default function Login() {
       const response = await shipperApi.login(formData.email, formData.password);
       
       if (response.access_token) {
-        await signIn({
-          token: response.access_token,
-          refreshToken: response.refresh_token,
-          user: response.user
-        });
+        // Debug: Log response để kiểm tra
+        console.log('=== DEBUG LOGIN RESPONSE ===');
+        console.log('Full response:', response);
+        console.log('User object:', response.user);
+        console.log('User roles:', response.user?.roles);
+        console.log('Shipper verified:', response.user?.shipper_verified);
+        console.log('================================');
+        
+        // Kiểm tra nếu là shipper chưa được xét duyệt
+        if (response.user && response.user.roles && response.user.roles.includes('shipper')) {
+          // Mặc định shipper chưa được xét duyệt nếu không có trường này
+          const isShipperVerified = response.user.shipper_verified === true;
+          
+          if (!isShipperVerified) {
+            // Chưa được xét duyệt, chuyển đến trang chờ
+            await signIn({
+              token: response.access_token,
+              refreshToken: response.refresh_token,
+              user: response.user
+            });
+            
+            Alert.alert(
+              'Đăng nhập thành công!', 
+              'Tài khoản shipper của bạn chưa được admin xét duyệt. Vui lòng đợi.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/application')
+                }
+              ]
+            );
+          } else {
+            // Đã được xét duyệt, vào giao diện chính
+            await signIn({
+              token: response.access_token,
+              refreshToken: response.refresh_token,
+              user: response.user
+            });
 
-        Alert.alert(
-          'Thành công',
-          'Đăng nhập thành công!',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(tabs)')
-            }
-          ]
-        );
+            Alert.alert(
+              'Thành công',
+              'Đăng nhập thành công!',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => router.replace('/(tabs)')
+                }
+              ]
+            );
+          }
+        } else {
+          // Không phải shipper, xử lý bình thường
+          await signIn({
+            token: response.access_token,
+            refreshToken: response.refresh_token,
+            user: response.user
+          });
+
+          Alert.alert(
+            'Thành công',
+            'Đăng nhập thành công!',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(tabs)')
+              }
+            ]
+          );
+        }
       } else {
         Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
       }
