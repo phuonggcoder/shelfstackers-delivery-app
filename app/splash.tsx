@@ -11,7 +11,7 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/images/icon.png')} style={{ width: 140, height: 140 }} />
+      <Image source={require('../assets/images/ShelfStackerDelivery.png')} style={{ width: 140, height: 140 }} />
       <Text style={styles.title}>ShelfStacker Delivery</Text>
     </View>
   );
