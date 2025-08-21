@@ -12,7 +12,12 @@ export const shipperApi = {
     if (_token) headers.Authorization = `Bearer ${_token}`;
     
     try {
-      const res = await fetch(`${APP_CONFIG.API_BASE_URL}${path}`, { headers, ...opts });
+      const url = `${APP_CONFIG.API_BASE_URL}${path}`;
+      // Debug: log request
+      try {
+        console.log('[API REQUEST]', opts.method || 'GET', url, 'headers:', headers, 'body:', opts.body ? opts.body.substring(0, 300) : null);
+      } catch { }
+      const res = await fetch(url, { headers, ...opts });
       
       if (!res.ok) {
         const errorText = await res.text();
@@ -32,8 +37,11 @@ export const shipperApi = {
       }
       
       try {
-        return await res.json();
-      } catch (e) {
+        const json = await res.json();
+        try { console.log('[API RESPONSE]', url, 'status:', res.status, 'body:', json); } catch { }
+        return json;
+      } catch {
+        try { console.log('[API RESPONSE] no-json', url, 'status:', res.status); } catch { }
         return null;
       }
     } catch (error: any) {
@@ -180,20 +188,27 @@ export const shipperApi = {
     const q = query ? '?' + query : '';
     const primary = `${API_ENDPOINTS.GET_ORDERS}${q}`;
     try {
-      return await this.request(primary);
-  } catch (err) {
-      // Fallbacks: some backends expose orders under /api/orders (with /my for current user)
-      const fallbacks = [`/api/orders/my${q}`, `/api/orders${q}`];
-      for (const path of fallbacks) {
-        try {
-          const res = await this.request(path);
-          return res;
+      const res = await this.request(primary);
+      // If primary returns nothing or an empty payload, try fallbacks
+      const isEmpty = !res || (Array.isArray(res) && res.length === 0) || (res && typeof res === 'object' && !res.orders && !res.data && (Object.keys(res).length === 0));
+      if (!isEmpty) return res;
     } catch {
-          // ignore and try next
-        }
-      }
-      throw err;
+      // will try fallbacks below
     }
+
+    // Fallbacks: some backends expose orders under /api/orders (with /my for current user)
+    const fallbacks = [`/api/orders/my${q}`, `/api/orders${q}`];
+    for (const path of fallbacks) {
+      try {
+        const res = await this.request(path);
+        const isEmpty = !res || (Array.isArray(res) && res.length === 0) || (res && typeof res === 'object' && !res.orders && !res.data && (Object.keys(res).length === 0));
+        if (!isEmpty) return res;
+      } catch {
+        // ignore and try next
+      }
+    }
+    // If nothing returned, return empty array so UI shows fallback message
+    return [];
   },
 
   async getOrder(id: string) {

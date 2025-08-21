@@ -47,66 +47,42 @@ export default function Login() {
         console.log('Shipper verified:', response.user?.shipper_verified);
         console.log('================================');
         
-        // Kiểm tra nếu là shipper chưa được xét duyệt
-        if (response.user && response.user.roles && response.user.roles.includes('shipper')) {
-          // Mặc định shipper chưa được xét duyệt nếu không có trường này
-          const isShipperVerified = response.user.shipper_verified === true;
-          
-    if (!isShipperVerified) {
-            // Chưa được xét duyệt, chuyển đến trang chờ
-            await signIn({
-              token: response.access_token,
-              refreshToken: response.refresh_token,
-              user: response.user
-            });
-            
-            Alert.alert(
-              'Đăng nhập thành công!', 
-              'Tài khoản shipper của bạn chưa được admin xét duyệt. Vui lòng đợi.',
-              [
-                {
-                  text: 'OK',
-      onPress: () => router.replace('/application')
-                }
-              ]
-            );
-          } else {
-            // Đã được xét duyệt, vào giao diện chính
-            await signIn({
-              token: response.access_token,
-              refreshToken: response.refresh_token,
-              user: response.user
-            });
+        // Persist tokens first
+        await signIn({
+          token: response.access_token,
+          refreshToken: response.refresh_token,
+          user: response.user
+        });
 
-            Alert.alert(
-              'Thành công',
-              'Đăng nhập thành công!',
-              [
-                {
-      text: 'OK',
-      onPress: () => router.replace('/shipper-orders')
-                }
-              ]
-            );
+        // Fetch fresh profile from API (ensure we have up-to-date shipper flags)
+        let freshUser = null;
+        try {
+          freshUser = await shipperApi.getCurrentUser();
+        } catch (e) {
+          // Fallback to server response if /me fails
+          freshUser = response.user;
+        }
+
+        const isShipper = Array.isArray(freshUser?.roles) && freshUser.roles.includes('shipper');
+        const isShipperVerified = !!freshUser?.shipper_verified;
+
+        if (isShipper) {
+          if (!isShipperVerified) {
+            // Shipper but not verified -> go to application/waiting screen
+            Alert.alert('Đăng nhập thành công!', 'Tài khoản shipper của bạn chưa được admin xét duyệt. Vui lòng đợi.', [
+              { text: 'OK', onPress: () => router.replace('/application') }
+            ]);
+          } else {
+            // Verified shipper -> redirect to shipper orders
+            Alert.alert('Thành công', 'Đăng nhập thành công!', [
+              { text: 'OK', onPress: () => router.replace('/(tabs)/shipper/orders') }
+            ]);
           }
         } else {
-          // Không phải shipper, xử lý bình thường
-          await signIn({
-            token: response.access_token,
-            refreshToken: response.refresh_token,
-            user: response.user
-          });
-
-          Alert.alert(
-            'Thành công',
-            'Đăng nhập thành công!',
-            [
-              {
-                text: 'OK',
-                onPress: () => router.replace('/(tabs)')
-              }
-            ]
-          );
+          // Regular user
+          Alert.alert('Thành công', 'Đăng nhập thành công!', [
+            { text: 'OK', onPress: () => router.replace('/(tabs)') }
+          ]);
         }
       } else {
         Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');

@@ -52,6 +52,7 @@ export default function ShipperOrders() {
   const [tab, setTab] = useState<string>('All');
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const [verified, setVerified] = useState<boolean | null>(null);
 
   const filtered = useMemo(() => {
     if (tab === 'All') return orders;
@@ -80,6 +81,32 @@ export default function ShipperOrders() {
       setRefreshing(false);
     }
   };
+
+  // On mount: fetch current user to check shipper verify flag and then fetch orders
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const me = await shipperApi.getCurrentUser();
+        const isShipper = Array.isArray(me?.roles) && me.roles.includes('shipper');
+        const isVerified = !!me?.shipper_verified;
+        setVerified(isShipper && isVerified);
+        if (!isShipper) {
+          // Not a shipper - redirect back to main tabs
+          router.replace('/(tabs)');
+          return;
+        }
+        if (!isVerified) {
+          router.replace('/application');
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to fetch current user', e);
+      }
+
+    // finally load orders
+    fetchOrders();
+    })();
+  }, [router]);
 
   const onRefresh = () => {
     fetchOrders();
