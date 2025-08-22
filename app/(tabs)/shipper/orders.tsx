@@ -4,6 +4,7 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
 import { shipperApi } from '@/lib/shipperApi';
 
 type Order = any;
@@ -138,7 +139,7 @@ export default function ShipperOrders() {
   };
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>ShelfStacker Phan Huy Ích</Text>
         <Text style={styles.headerSub}>403 Phan Huy Ích, Phường 14, Quận Gò Vấp, Hồ Chí Minh</Text>
@@ -177,11 +178,11 @@ const styles = StyleSheet.create({
   header: { padding: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
   headerTitle: { fontWeight: '700', fontSize: 16, color: '#111' },
   headerSub: { color: '#666', marginTop: 4, fontSize: 12 },
-  tabBar: { flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 8, paddingHorizontal: 8, justifyContent: 'space-between' },
-  tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: '#4CAF50' },
+  tabBar: { flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 10, paddingHorizontal: 12, justifyContent: 'space-between', borderBottomWidth: 1, borderColor: '#eee' },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: Colors.light.tabIconSelected, borderBottomWidth: 3 },
   tabText: { color: '#777' },
-  tabTextActive: { color: '#4CAF50', fontWeight: '700' },
+  tabTextActive: { color: Colors.light.tabIconSelected, fontWeight: '700' },
   card: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e5e5e5', marginBottom: 12, backgroundColor: '#fff' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orderId: { color: '#9C27B0' },

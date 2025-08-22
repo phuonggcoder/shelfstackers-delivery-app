@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
 import { MOCK_ORDERS } from '@/lib/mockData';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TabsIndex() {
   const router = useRouter();
@@ -39,13 +41,27 @@ export default function TabsIndex() {
           </TouchableOpacity>
         )}
       />
+      {/* bottom tab bar - fixed */}
+      <View style={styles.bottomBarContainer}>
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
+            <IconSymbol name="inventory" size={22} color={Colors.light.tabIconSelected} />
+            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconSelected }]}>Đơn hàng</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/info')}>
+            <IconSymbol name="person" size={22} color={'#999'} />
+            <Text style={styles.bottomTabText}>Cá nhân</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f3f5' },
-  listContent: { padding: 12, paddingBottom: Platform.OS === 'android' ? 110 : 100 },
+  listContent: { padding: 12, paddingBottom: Platform.OS === 'android' ? 160 : 140 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -66,4 +82,8 @@ const styles = StyleSheet.create({
   title: { fontWeight: '700', fontSize: 16, marginBottom: 4 },
   subtitle: { color: '#666', fontSize: 13 },
   price: { color: '#2E7D32', fontWeight: '700', fontSize: 14 },
+  bottomBarContainer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: Platform.OS === 'android' ? 84 : 94, alignItems: 'center', justifyContent: 'flex-end', pointerEvents: 'box-none' },
+  bottomBar: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderTopWidth: 1, borderColor: '#eee', paddingVertical: 8, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', elevation: 16, zIndex: 9999, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: -2 } },
+  bottomTab: { alignItems: 'center', justifyContent: 'center' },
+  bottomTabText: { marginTop: 4, fontSize: 12 },
 });
