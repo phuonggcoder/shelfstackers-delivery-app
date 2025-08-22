@@ -38,7 +38,26 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/images/ShelfStackerDelivery.png')} style={{ width: 140, height: 140 }} />
+      {/* Prefer using the native launcher icon (mipmap-like) so the in-app splash matches the launcher.
+          Try: assets/images/icon.png -> assets/images/splashscreen_logo.png -> ShelfStackerDelivery.png */}
+      {(() => {
+        // Try launcher icon first so the in-app splash mirrors the native mipmap icon
+        try {
+          const launcherIcon = require('../assets/images/splashscreen_logo.png');
+          console.log('Splash: using assets/images/splashscreen_logo.png ->', launcherIcon);
+          return <Image source={launcherIcon} style={{ width: 140, height: 140 }} />;
+  } catch {
+          // Fallback to the existing splash image
+          try {
+            const splashLogo = require('../assets/images/splashscreen_logo.png');
+            console.log('Splash: using splashscreen_logo.png ->', splashLogo);
+            return <Image source={splashLogo} style={{ width: 140, height: 140 }} />;
+          } catch (e) {
+            console.warn('Splash: failed to resolve splashscreen_logo.png, fallback to ShelfStackerDelivery.png', e);
+            return <Image source={require('../assets/images/ShelfStackerDelivery.png')} style={{ width: 140, height: 140 }} />;
+          }
+        }
+      })()}
       <Text style={styles.title}>ShelfStacker Delivery</Text>
     </View>
   );
