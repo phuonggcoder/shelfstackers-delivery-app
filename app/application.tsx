@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   View
@@ -29,7 +28,7 @@ export default function Application() {
         if (!mounted) return;
         if (latest && latest.shipper_verified === true) {
           clearInterval(id);
-          router.replace('/shipper-orders');
+          router.replace('/shipper/orders');
         }
       } catch {
         // ignore
@@ -44,7 +43,6 @@ export default function Application() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Main Content */}
       <View style={styles.content}>

@@ -69,20 +69,17 @@ export default function Login() {
         if (isShipper) {
           if (!isShipperVerified) {
             // Shipper but not verified -> go to application/waiting screen
-            Alert.alert('Đăng nhập thành công!', 'Tài khoản shipper của bạn chưa được admin xét duyệt. Vui lòng đợi.', [
-              { text: 'OK', onPress: () => router.replace('/application') }
-            ]);
+            console.log('Shipper not verified, redirecting to application');
+            router.replace('/application');
           } else {
             // Verified shipper -> redirect to shipper orders
-            Alert.alert('Thành công', 'Đăng nhập thành công!', [
-              { text: 'OK', onPress: () => router.replace('/(tabs)/shipper/orders') }
-            ]);
+            console.log('Verified shipper, redirecting to orders');
+            router.replace('/(tabs)/shipper/orders');
           }
         } else {
           // Regular user
-          Alert.alert('Thành công', 'Đăng nhập thành công!', [
-            { text: 'OK', onPress: () => router.replace('/(tabs)') }
-          ]);
+          console.log('Regular user, redirecting to main tabs');
+          router.replace('/(tabs)');
         }
       } else {
         Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');

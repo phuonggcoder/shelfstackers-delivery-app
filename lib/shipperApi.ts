@@ -184,11 +184,24 @@ export const shipperApi = {
   },
 
   // Shipper Endpoints - using /api/shipper prefix
-  async getOrders(query = '') {
+  async getOrders(params: { status?: string; page?: number; limit?: number } = {}) {
+    const { status, page = 1, limit = 50 } = params;
+    const queryParams = new URLSearchParams();
+    
+    if (status) queryParams.append('status', status);
+    if (page) queryParams.append('page', page.toString());
+    if (limit) queryParams.append('limit', limit.toString());
+    
+    const query = queryParams.toString();
     const q = query ? '?' + query : '';
+    
     const primary = `${API_ENDPOINTS.GET_ORDERS}${q}`;
     try {
       const res = await this.request(primary);
+      // Handle new response format from shipperRouter
+      if (res && res.orders && Array.isArray(res.orders)) {
+        return res; // Return full response with orders array and pagination
+      }
       // If primary returns nothing or an empty payload, try fallbacks
       const isEmpty = !res || (Array.isArray(res) && res.length === 0) || (res && typeof res === 'object' && !res.orders && !res.data && (Object.keys(res).length === 0));
       if (!isEmpty) return res;
@@ -252,7 +265,7 @@ export const shipperApi = {
     }
   },
 
-  async updateStatus(id: string, body: any) {
+  async updateStatus(id: string, body: { order_status: string; note?: string }) {
     const primary = `${API_ENDPOINTS.UPDATE_STATUS}/${id}/status`;
     try {
       return await this.request(primary, {
@@ -270,5 +283,22 @@ export const shipperApi = {
           throw err;
         }
     }
+  },
+
+  // New method to get orders by specific status with better filtering
+  async getOrdersByStatus(status: string, page: number = 1, limit: number = 50) {
+    return this.getOrders({ status, page, limit });
+  },
+
+  // New method to get available orders (unassigned or assigned to current shipper)
+  async getAvailableOrders(page: number = 1, limit: number = 50) {
+    // For available orders, we want AwaitingPickup status
+    return this.getOrders({ status: 'AwaitingPickup', page, limit });
+  },
+
+  // New method to get assigned orders for current shipper
+  async getAssignedOrders(page: number = 1, limit: number = 50) {
+    // For assigned orders, we want orders that are not AwaitingPickup
+    return this.getOrders({ page, limit });
   },
 };
