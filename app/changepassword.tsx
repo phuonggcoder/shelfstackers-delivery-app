@@ -24,20 +24,21 @@ export default function ChangePasswordScreen() {
     setLoading(true);
     try {
       const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/change-password', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          oldPassword,
+          currentPassword: oldPassword,
           newPassword,
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        Alert.alert('Thành công', 'Đổi mật khẩu thành công!');
-        router.back();
+      if (res.ok && (data.success || data.message === 'Password changed successfully')) {
+        Alert.alert('Thành công', 'Đổi mật khẩu thành công!', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
       } else {
         Alert.alert('Lỗi', data.message || 'Đổi mật khẩu thất bại');
       }
