@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { AddressWithDirections } from '@/components/AddressWithDirections';

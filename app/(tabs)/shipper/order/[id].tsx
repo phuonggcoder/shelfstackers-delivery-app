@@ -5,7 +5,8 @@ import { useDirections } from '@/hooks/useDirections';
 import { shipperApi } from '@/lib/shipperApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function OrderDetail() {
@@ -422,7 +423,7 @@ export default function OrderDetail() {
           </View>
           
           {order.order_items && order.order_items.map((item: any, index: number) => (
-            <View key={index} style={styles.productItem}>
+            <View key={`product-${index}`} style={styles.productItem}>
               <ThemedText style={styles.productName}>
                 {item.book_id?.title || item.title || 'Không có tên sản phẩm'}
               </ThemedText>
