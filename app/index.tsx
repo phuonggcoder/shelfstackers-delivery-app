@@ -1,5 +1,5 @@
-import React from 'react';
 import { Redirect } from 'expo-router';
+import * as React from 'react';
 
 // Start the app at the splash screen which will navigate to login.
 export default function IndexRedirect() {
