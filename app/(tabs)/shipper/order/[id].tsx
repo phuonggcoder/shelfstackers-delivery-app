@@ -112,11 +112,40 @@ export default function OrderDetail() {
 
   // Get payment method display
   const getPaymentMethodDisplay = (method: string) => {
-    switch (method) {
-      case 'COD': return 'Tiền mặt';
-      case 'ZaloPay': return 'ZaloPay';
-      case 'PayOS': return 'PayOS';
-      default: return 'Tiền mặt';
+    console.log('Payment method raw value:', method); // Debug log
+    console.log('Payment method type:', typeof method); // Debug log
+    
+    if (!method) {
+      console.log('Payment method is empty/null/undefined');
+      return 'Tiền mặt';
+    }
+    
+    const upperMethod = String(method).toUpperCase().trim();
+    console.log('Payment method after processing:', upperMethod); // Debug log
+    
+    switch (upperMethod) {
+      case 'COD': 
+      case 'CASH': 
+      case 'TIENMAT': 
+      case 'TIỀN MẶT':
+        return 'Tiền mặt';
+      case 'ZALOPAY': 
+      case 'ZALO PAY':
+        return 'ZaloPay';
+      case 'PAYOS': 
+      case 'PAY OS':
+        return 'PayOS';
+      case 'BANK_TRANSFER':
+      case 'CHUYENKHOAN':
+      case 'CHUYỂN KHOẢN':
+        return 'Chuyển khoản';
+      case 'MOMO':
+        return 'MoMo';
+      case 'VNPAY':
+        return 'VNPay';
+      default: 
+        console.log('Payment method not matched, using default. Raw value was:', method);
+        return `Khác (${method})`;
     }
   };
 
@@ -354,21 +383,11 @@ export default function OrderDetail() {
           
           {order.order_items && order.order_items.map((item: any, index: number) => (
             <View key={index} style={styles.productItem}>
-              <View style={styles.productImage}>
-                <ThemedText style={styles.productImageText}>🍵</ThemedText>
-              </View>
-              
-              <View style={styles.productInfo}>
-                <View style={styles.productDetails}>
-                  <ThemedText style={styles.productQuantity}>x{item.quantity || 1}</ThemedText>
-                  <ThemedText style={styles.productName}>
-                    {item.book_id?.title || item.title || 'Không có tên sản phẩm'}
-                  </ThemedText>
-                </View>
-                
-                <ThemedText style={styles.productPrice}>
-                  {(item.price || 0).toLocaleString('vi-VN')}₫
-                </ThemedText>
+              <ThemedText style={styles.productName}>
+                {item.book_id?.title || item.title || 'Không có tên sản phẩm'}
+              </ThemedText>
+              <View style={styles.quantityContainer}>
+                <ThemedText style={styles.productQuantity}>x{item.quantity || 1}</ThemedText>
               </View>
             </View>
           ))}
@@ -435,9 +454,10 @@ export default function OrderDetail() {
             <View style={styles.paymentRow}>
               <ThemedText style={styles.paymentLabel}>Phương thức thanh toán</ThemedText>
               <ThemedText style={styles.paymentValue}>
-                {getPaymentMethodDisplay(order.payment_method)}
+                {getPaymentMethodDisplay(order.payment_id?.payment_method)}
               </ThemedText>
             </View>
+
             
             <View style={styles.paymentRow}>
               <ThemedText style={styles.paymentLabel}>Tổng tiền</ThemedText>
@@ -654,41 +674,27 @@ const styles = StyleSheet.create({
   productItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-  },
-  productImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  productImageText: {
-    fontSize: 24,
-  },
-  productInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  productDetails: {
-    flex: 1,
-  },
-  productQuantity: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
   },
   productName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
-    marginBottom: 6,
+    flex: 1,
+  },
+  quantityContainer: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  productQuantity: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
   },
   sizeBadge: {
     backgroundColor: '#FF9800',
@@ -702,11 +708,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
   },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4A90E2',
-  },
+
   paymentDetails: {
     marginTop: 10,
   },
@@ -826,4 +828,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+
 });

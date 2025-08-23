@@ -128,16 +128,11 @@ function OrderCard({ item, onOpen, onAccept, onReject, onUpdateStatus }: {
       </View>
 
       <View style={styles.actionsRow}>
-        {/* Show action buttons for orders that can be accepted/rejected */}
+        {/* Show action buttons for orders that can be accepted */}
         {item.order_status === 'AwaitingPickup' && canClaim ? (
-          <>
-            <TouchableOpacity style={styles.accept} onPress={() => onAccept(item)}>
-              <ThemedText style={{ color: 'white', fontWeight: '600' }}>Nhận đơn hàng</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.reject} onPress={() => onReject(item)}>
-              <ThemedText style={{ color: 'white', fontWeight: '600' }}>Từ chối</ThemedText>
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity style={styles.accept} onPress={() => onAccept(item)}>
+            <ThemedText style={{ color: 'white', fontWeight: '600' }}>Nhận đơn hàng</ThemedText>
+          </TouchableOpacity>
         ) : (
           <>
             {/* Status display */}
@@ -629,12 +624,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10, 
     borderRadius: 8 
   },
-  reject: { 
-    backgroundColor: '#F44336', 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 8 
-  },
+
   updateStatus: {
     paddingHorizontal: 12,
     paddingVertical: 8,
