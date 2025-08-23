@@ -67,17 +67,17 @@ export default function Application() {
 
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#4A90E2" />
+              <Ionicons name="checkmark-circle" size={20} color="#4A90E2" />
             <Text style={styles.infoText}>Hồ sơ đã được gửi thành công</Text>
           </View>
           
           <View style={styles.infoItem}>
-            <Ionicons name="time" size={20} color="#4A90E2" />
+              <Ionicons name="time" size={20} color="#4A90E2" />
             <Text style={styles.infoText}>Đang chờ admin xét duyệt</Text>
           </View>
           
           <View style={styles.infoItem}>
-            <Ionicons name="notifications" size={20} color="#4A90E2" />
+              <Ionicons name="notifications" size={20} color="#4A90E2" />
             <Text style={styles.infoText}>Bạn sẽ nhận thông báo khi có kết quả</Text>
           </View>
         </View>
