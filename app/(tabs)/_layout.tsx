@@ -9,12 +9,13 @@ export default function TabsLayout() {
   const pathname = usePathname() ?? '';
   const isInfo = pathname.startsWith('/info') || pathname.includes('/info');
   const isOrders = pathname.startsWith('/shipper') || pathname.includes('/shipper');
+  const bottomHeight = Platform.OS === 'android' ? 84 : 94;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingBottom: bottomHeight }}>
       <Slot />
 
-      <View style={styles.bottomBarContainer}>
+      <View style={[styles.bottomBarContainer, { height: bottomHeight }]}> 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
             <IconSymbol name="inventory" size={22} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
