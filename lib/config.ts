@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
   GET_MY_SESSIONS: '/api/users/session/my',
   DELETE_SESSION: '/api/users/session',
   
-  // Shipper Endpoints - using /api/shipper prefix
+  // Shipper Endpoints - using /api/shipper prefix (updated to match shipperRouter.js)
   GET_ORDERS: '/api/shipper/orders',
   GET_ORDER: '/api/shipper/orders',
   ACCEPT_ORDER: '/api/shipper/orders',

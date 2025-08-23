@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/lib/auth';
+import React from 'react';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -21,7 +22,11 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
-          <Stack.Screen name="application" options={{ headerShown: false }} />
+          <Stack.Screen name="application" options={{ 
+            headerShown: false,
+            statusBarStyle: 'dark',
+            statusBarBackgroundColor: '#FFFFFF'
+          }} />
           <Stack.Screen name="splash" options={{ headerShown: false }} />
           {/* point to the (tabs) group so the Stack can resolve the tabs layout */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

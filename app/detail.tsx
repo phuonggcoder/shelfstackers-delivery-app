@@ -1,6 +1,9 @@
+
 import * as React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import { Button, StyleSheet, Text, View } from 'react-native';
 
 export default function Detail() {
   const params = useLocalSearchParams();
