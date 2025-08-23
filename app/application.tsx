@@ -7,7 +7,6 @@ import * as React from 'react';
 import { useEffect } from 'react';
 import {
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   View
@@ -16,6 +15,7 @@ import {
 export default function Application() {
   const router = useRouter();
   const { refreshUser } = useAuth();
+  const [activeTab, setActiveTab] = React.useState<'orders' | 'profile'>('orders');
 
   useEffect(() => {
     let mounted = true;
@@ -30,7 +30,7 @@ export default function Application() {
         if (!mounted) return;
         if (latest && latest.shipper_verified === true) {
           clearInterval(id);
-          router.replace('/shipper-orders');
+          router.replace('/shipper/orders');
         }
       } catch {
         // ignore
@@ -46,6 +46,7 @@ export default function Application() {
   return (
   <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       
       {/* Main Content */}
       <View style={styles.content}>
@@ -85,6 +86,7 @@ export default function Application() {
       </View>
 
       {/* Bottom Navigation Tabs */}
+
       <BottomTabs 
   activeTab="orders"
         onTabPress={(tab) => {
@@ -93,6 +95,7 @@ export default function Application() {
           } else if (tab === 'orders') {
             router.replace('/application');
           }
+
         }}
       />
     </SafeAreaView>
