@@ -45,8 +45,8 @@ export default function TabsIndex() {
       <View style={styles.bottomBarContainer}>
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
-            <IconSymbol name="inventory" size={22} color={Colors.light.tabIconSelected} />
-            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconSelected }]}>Đơn hàng</Text>
+            <IconSymbol name="inventory" size={22} color={Colors.light.tabIconInfo} />
+            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconInfo }]}>Đơn hàng</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/info')}>

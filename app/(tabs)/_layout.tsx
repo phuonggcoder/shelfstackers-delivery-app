@@ -1,26 +1,30 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
-import { Slot, useRouter } from 'expo-router';
+import { Slot, usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TabsLayout() {
   const router = useRouter();
+  const pathname = usePathname() ?? '';
+  const isInfo = pathname.startsWith('/info') || pathname.includes('/info');
+  const isOrders = pathname.startsWith('/shipper') || pathname.includes('/shipper');
+  const bottomHeight = Platform.OS === 'android' ? 84 : 94;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingBottom: bottomHeight }}>
       <Slot />
 
-      <View style={styles.bottomBarContainer}>
+      <View style={[styles.bottomBarContainer, { height: bottomHeight }]}> 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
-            <IconSymbol name="inventory" size={22} color={Colors.light.tabIconSelected} />
-            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconSelected }]}>Đơn hàng</Text>
+            <IconSymbol name="inventory" size={22} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Đơn hàng</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/info')}>
-            <IconSymbol name="person" size={22} color={'#999'} />
-            <Text style={styles.bottomTabText}>Cá nhân</Text>
+            <IconSymbol name="person" size={22} color={isInfo ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isInfo ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Cá nhân</Text>
           </TouchableOpacity>
         </View>
       </View>
