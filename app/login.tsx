@@ -1,7 +1,8 @@
 import { useAuth } from '@/lib/auth';
 import { shipperApi } from '@/lib/shipperApi';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,

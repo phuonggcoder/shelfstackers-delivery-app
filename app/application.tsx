@@ -3,7 +3,8 @@ import { useAuth } from '@/lib/auth';
 import { shipperApi } from '@/lib/shipperApi';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import * as React from 'react';
+import { useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -83,12 +84,16 @@ export default function Application() {
       </View>
 
       {/* Bottom Navigation Tabs */}
-      <BottomTabs
-        activeTab={activeTab}
+
+      <BottomTabs 
+        activeTab="profile"
         onTabPress={(tab) => {
-          setActiveTab(tab);
-          if (tab === 'orders') router.replace('/shipper-orders');
-          else if (tab === 'profile') router.replace('/info');
+          if (tab === 'profile') {
+            router.replace('/profile');
+          } else if (tab === 'orders') {
+            router.replace('/application');
+          }
+
         }}
       />
     </SafeAreaView>

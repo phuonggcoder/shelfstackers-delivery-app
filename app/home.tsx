@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as React from 'react';
+import { Button, StyleSheet, Text, View } from 'react-native';
 
 export default function Home() {
   const router = useRouter();
@@ -9,7 +9,7 @@ export default function Home() {
       <Text style={styles.title}>Trang chủ</Text>
       <Button title="Mở đơn mẫu" onPress={() => router.push('/detail?id=123')} />
       <View style={{ height: 8 }} />
-      <Button title="Thông tin" onPress={() => router.push('/info')} />
+  <Button title="Trang cá nhân" onPress={() => router.push('/profile')} />
     </View>
   );
 }
