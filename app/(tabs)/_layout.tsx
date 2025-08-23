@@ -1,56 +1,40 @@
-import { Tabs, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '@/lib/auth';
+import { Slot, usePathname, useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const { token, loading } = useAuth();
+export default function TabsLayout() {
   const router = useRouter();
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !token) {
-      // replace to prevent back navigation
-      router.replace('/login');
-    }
-  }, [loading, token, router]);
+  const pathname = usePathname() ?? '';
+  const isInfo = pathname.startsWith('/info') || pathname.includes('/info');
+  const isOrders = pathname.startsWith('/shipper') || pathname.includes('/shipper');
+  const bottomHeight = Platform.OS === 'android' ? 84 : 94;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-  tabBarButton: (props) => <HapticTab {...(props as any)} />,
-  tabBarBackground: () => <TabBarBackground />,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Đơn hàng',
-          tabBarIcon: ({ color }) => <IconSymbol size={26} name="list" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="shipper/index"
-        options={{
-          title: 'Cá nhân',
-          tabBarIcon: ({ color }) => <IconSymbol size={26} name="person" color={color} />,
-        }}
-      />
-    </Tabs>
+    <View style={{ flex: 1, paddingBottom: bottomHeight }}>
+      <Slot />
+
+      <View style={[styles.bottomBarContainer, { height: bottomHeight }]}> 
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
+            <IconSymbol name="inventory" size={22} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Đơn hàng</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/info')}>
+            <IconSymbol name="person" size={22} color={isInfo ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isInfo ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Cá nhân</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bottomBarContainer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: Platform.OS === 'android' ? 84 : 94, alignItems: 'center', justifyContent: 'flex-end' },
+  bottomBar: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderTopWidth: 1, borderColor: '#eee', paddingVertical: 8, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', elevation: 16, zIndex: 9999, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: -2 } },
+  bottomTab: { alignItems: 'center', justifyContent: 'center' },
+  bottomTabText: { marginTop: 4, fontSize: 12 },
+});
