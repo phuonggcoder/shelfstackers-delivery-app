@@ -14,6 +14,7 @@ import {
 export default function Application() {
   const router = useRouter();
   const { refreshUser } = useAuth();
+  const [activeTab, setActiveTab] = React.useState<'orders' | 'profile'>('orders');
 
   useEffect(() => {
     let mounted = true;
@@ -82,11 +83,12 @@ export default function Application() {
       </View>
 
       {/* Bottom Navigation Tabs */}
-      <BottomTabs 
-        activeTab="orders"
+      <BottomTabs
+        activeTab={activeTab}
         onTabPress={(tab) => {
-          console.log('Tab pressed:', tab);
-          // Có thể thêm logic xử lý tab press ở đây
+          setActiveTab(tab);
+          if (tab === 'orders') router.replace('/shipper-orders');
+          else if (tab === 'profile') router.replace('/info');
         }}
       />
     </SafeAreaView>

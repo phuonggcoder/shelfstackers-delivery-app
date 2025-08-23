@@ -471,7 +471,7 @@ export default function ShipperOrders() {
   }
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Đơn hàng Shipper</Text>
         <Text style={styles.headerSub}>Quản lý và cập nhật trạng thái đơn hàng</Text>
