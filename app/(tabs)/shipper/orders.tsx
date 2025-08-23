@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { AddressWithDirections } from '@/components/AddressWithDirections';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { shipperApi } from '@/lib/shipperApi';
@@ -117,9 +118,17 @@ function OrderCard({ item, onOpen, onAccept, onReject, onUpdateStatus }: {
         </ThemedText>
         
         {/* Address - from summary object (new format) with fallback */}
-        <ThemedText style={{ marginTop: 6, color: '#999', fontSize: 12 }}>
-          {item.summary?.address || item.shipping_address_snapshot?.fullAddress || item.shipping_address_snapshot?.address_detail || item.address_id?.fullAddress || item.address || 'Không có địa chỉ'}
-        </ThemedText>
+        <AddressWithDirections
+          address={item.summary?.address || 
+                   item.shipping_address_snapshot?.fullAddress || 
+                   item.shipping_address_snapshot?.address_detail || 
+                   item.address_id?.fullAddress || 
+                   item.address}
+          coordinates={item.shipping_address_snapshot?.coordinates || 
+                     item.address_id?.coordinates}
+          showDirectionsButton={false}
+          style={{ marginTop: 6 }}
+        />
         
         {/* Date - from order_date or createdAt */}
         <ThemedText style={{ marginTop: 6, color: '#999', fontSize: 12 }}>

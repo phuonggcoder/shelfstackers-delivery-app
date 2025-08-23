@@ -1,6 +1,9 @@
+import { AddressWithDirections } from '@/components/AddressWithDirections';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useDirections } from '@/hooks/useDirections';
 import { shipperApi } from '@/lib/shipperApi';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -12,6 +15,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
+  const { openDirections, openDirectionsToCoordinates } = useDirections();
 
   useEffect(() => {
     if (!id) return;
@@ -303,6 +307,24 @@ export default function OrderDetail() {
     }
   };
 
+  // Open directions to delivery address
+  const openDirectionsToAddress = async () => {
+    const coordinates = order.shipping_address_snapshot?.coordinates || order.address_id?.coordinates;
+    const address = order.summary?.address || 
+                   order.shipping_address_snapshot?.fullAddress || 
+                   order.shipping_address_snapshot?.address_detail || 
+                   order.address_id?.fullAddress || 
+                   order.address;
+
+    if (coordinates) {
+      await openDirectionsToCoordinates(coordinates.latitude, coordinates.longitude);
+    } else if (address) {
+      await openDirections(address);
+    } else {
+      Alert.alert('Lỗi', 'Không tìm thấy địa chỉ giao hàng');
+    }
+  };
+
   // Calculate total amount
   const totalAmount = (order.total_amount || 0) + (order.ship_amount || 0) - (order.discount_amount || 0);
 
@@ -327,26 +349,41 @@ export default function OrderDetail() {
               <ThemedText style={styles.iconText}>📍</ThemedText>
             </View>
             <ThemedText style={styles.sectionTitle}>Người nhận</ThemedText>
-            <View style={styles.recipientActions}>
-              <TouchableOpacity 
-                style={[styles.actionButton, !getValidPhoneNumber() && styles.actionButtonDisabled]} 
-                onPress={callRecipient}
-                disabled={!getValidPhoneNumber()}
-              >
-                <ThemedText style={[styles.actionButtonText, !getValidPhoneNumber() && styles.actionButtonTextDisabled]}>
-                  📞
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.actionButton, !getValidPhoneNumber() && styles.actionButtonDisabled]} 
-                onPress={messageRecipient}
-                disabled={!getValidPhoneNumber()}
-              >
-                <ThemedText style={[styles.actionButtonText, !getValidPhoneNumber() && styles.actionButtonTextDisabled]}>
-                  ✉️
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
+                         <View style={styles.recipientActions}>
+               <TouchableOpacity 
+                 style={[styles.actionButton, order.order_status === 'AwaitingPickup' && styles.actionButtonDisabled]} 
+                 onPress={openDirectionsToAddress}
+                 disabled={order.order_status === 'AwaitingPickup'}
+               >
+                 <Ionicons 
+                   name="navigate" 
+                   size={20} 
+                   color={order.order_status === 'AwaitingPickup' ? "#999" : "#2196F3"} 
+                 />
+               </TouchableOpacity>
+               <TouchableOpacity 
+                 style={[styles.actionButton, (!getValidPhoneNumber() || order.order_status === 'AwaitingPickup') && styles.actionButtonDisabled]} 
+                 onPress={callRecipient}
+                 disabled={!getValidPhoneNumber() || order.order_status === 'AwaitingPickup'}
+               >
+                 <Ionicons 
+                   name="call" 
+                   size={20} 
+                   color={(!getValidPhoneNumber() || order.order_status === 'AwaitingPickup') ? "#999" : "#2196F3"} 
+                 />
+               </TouchableOpacity>
+               <TouchableOpacity 
+                 style={[styles.actionButton, (!getValidPhoneNumber() || order.order_status === 'AwaitingPickup') && styles.actionButtonDisabled]} 
+                 onPress={messageRecipient}
+                 disabled={!getValidPhoneNumber() || order.order_status === 'AwaitingPickup'}
+               >
+                 <Ionicons 
+                   name="mail" 
+                   size={20} 
+                   color={(!getValidPhoneNumber() || order.order_status === 'AwaitingPickup') ? "#999" : "#2196F3"} 
+                 />
+               </TouchableOpacity>
+             </View>
           </View>
           
           <View style={styles.recipientInfo}>
@@ -360,14 +397,17 @@ export default function OrderDetail() {
               <ThemedText style={styles.recipientPhone}>
                 {getValidPhoneNumber() || 'Không có số điện thoại'}
               </ThemedText>
-              <ThemedText style={styles.recipientAddress}>
-                {order.summary?.address || 
-                 order.shipping_address_snapshot?.fullAddress || 
-                 order.shipping_address_snapshot?.address_detail || 
-                 order.address_id?.fullAddress || 
-                 order.address || 
-                 'Không có địa chỉ'}
-              </ThemedText>
+              <AddressWithDirections
+                address={order.summary?.address || 
+                         order.shipping_address_snapshot?.fullAddress || 
+                         order.shipping_address_snapshot?.address_detail || 
+                         order.address_id?.fullAddress || 
+                         order.address}
+                coordinates={order.shipping_address_snapshot?.coordinates || 
+                           order.address_id?.coordinates}
+                showDirectionsButton={false}
+                style={styles.recipientAddress}
+              />
             </View>
           </View>
         </View>
@@ -493,14 +533,19 @@ export default function OrderDetail() {
         </View>
       )}
 
-      {/* Thông báo khi đơn hàng chưa được nhận */}
-      {order.order_status === 'AwaitingPickup' && (
-        <View style={styles.infoMessage}>
-          <ThemedText style={styles.infoMessageText}>
-            Đơn hàng này chưa được nhận. Vui lòng quay lại trang danh sách để nhận đơn hàng.
-          </ThemedText>
-        </View>
-      )}
+             {/* Thông báo khi đơn hàng chưa được nhận */}
+       {order.order_status === 'AwaitingPickup' && (
+         <View style={styles.infoMessage}>
+           <ThemedText style={styles.infoMessageText}>
+             Đơn hàng này chưa được nhận. Vui lòng quay lại trang danh sách để nhận đơn hàng.
+           </ThemedText>
+           <View style={styles.infoMessageNote}>
+             <ThemedText style={styles.infoMessageNoteText}>
+               ⚠️ Các chức năng gọi điện, nhắn tin và chỉ đường sẽ được mở khóa sau khi nhận đơn hàng
+             </ThemedText>
+           </View>
+         </View>
+       )}
     </ThemedView>
   );
 }
@@ -822,11 +867,24 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#2196F3',
   },
-  infoMessageText: {
-    color: '#1976D2',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+     infoMessageText: {
+     color: '#1976D2',
+     fontSize: 14,
+     textAlign: 'center',
+     lineHeight: 20,
+   },
+   infoMessageNote: {
+     marginTop: 8,
+     paddingTop: 8,
+     borderTopWidth: 1,
+     borderTopColor: '#bbdefb',
+   },
+   infoMessageNoteText: {
+     color: '#FF9800',
+     fontSize: 12,
+     textAlign: 'center',
+     lineHeight: 16,
+     fontStyle: 'italic',
+   },
 
 });
