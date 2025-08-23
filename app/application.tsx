@@ -44,7 +44,9 @@ export default function Application() {
   }, [refreshUser, router]);
 
   return (
-    <SafeAreaView style={styles.container}>
+  <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       
       {/* Main Content */}
       <View style={styles.content}>
@@ -86,7 +88,7 @@ export default function Application() {
       {/* Bottom Navigation Tabs */}
 
       <BottomTabs 
-        activeTab="profile"
+  activeTab="orders"
         onTabPress={(tab) => {
           if (tab === 'profile') {
             router.replace('/profile');
