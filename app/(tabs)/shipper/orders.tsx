@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     padding: 16, 
     backgroundColor: '#fff', 
     borderBottomWidth: 1, 
-    borderColor: '#eee' 
+  borderColor: '#fff' 
   },
   headerTitle: { 
     fontWeight: '700', 

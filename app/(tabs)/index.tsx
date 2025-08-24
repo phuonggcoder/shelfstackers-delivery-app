@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   subtitle: { color: '#666', fontSize: 13 },
   price: { color: '#2E7D32', fontWeight: '700', fontSize: 14 },
   bottomBarContainer: { position: 'absolute', left: 0, right: 0, bottom: 0, height: Platform.OS === 'android' ? 84 : 94, alignItems: 'center', justifyContent: 'flex-end', pointerEvents: 'box-none' },
-  bottomBar: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderTopWidth: 1, borderColor: '#eee', paddingVertical: 8, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', elevation: 16, zIndex: 9999, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: -2 } },
+  bottomBar: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 12, borderTopRightRadius: 12, borderTopWidth: 1, borderColor: '#fff', paddingVertical: 8, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', elevation: 16, zIndex: 9999, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: -2 } },
   bottomTab: { alignItems: 'center', justifyContent: 'center' },
   bottomTabText: { marginTop: 4, fontSize: 12 },
 });

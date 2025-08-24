@@ -274,7 +274,7 @@ export default function ShipperOrdersPage() {
       }
 
       const styles = StyleSheet.create({
-        header: { padding: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
+  header: { padding: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#fff' },
         headerTitle: { fontWeight: '700', fontSize: 16, color: '#111' },
         headerSub: { color: '#666', marginTop: 4, fontSize: 12 },
         tabBar: { flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 10, paddingHorizontal: 8, justifyContent: 'space-between' },
