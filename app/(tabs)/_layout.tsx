@@ -21,13 +21,8 @@ export default function TabsLayout() {
       <View style={[styles.bottomBarContainer, { height: bottomHeight }]}> 
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
-<<<<<<< HEAD
-            <IconSymbol name="inventory" size={22} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
-            <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.orders')}</Text>
-=======
             <IconSymbol name="inventory" size={26} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
-            <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Đơn hàng</Text>
->>>>>>> origin/message
+            <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.orders')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/messages')}>
@@ -36,13 +31,8 @@ export default function TabsLayout() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/profile')}>
-<<<<<<< HEAD
-            <IconSymbol name="person" size={22} color={isProfile ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
-            <Text style={[styles.bottomTabText, { color: isProfile ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.profile')}</Text>
-=======
             <IconSymbol name="person" size={26} color={isProfile ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
-            <Text style={[styles.bottomTabText, { color: isProfile ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Cá nhân</Text>
->>>>>>> origin/message
+            <Text style={[styles.bottomTabText, { color: isProfile ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.profile')}</Text>
           </TouchableOpacity>
         </View>
       </View>
