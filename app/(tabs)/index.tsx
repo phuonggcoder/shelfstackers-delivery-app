@@ -2,10 +2,13 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { MOCK_ORDERS } from '@/lib/mockData';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TabsIndex() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>(MOCK_ORDERS);
 
@@ -32,7 +35,7 @@ export default function TabsIndex() {
             onPress={() => router.push(`/(tabs)/shipper/order/${item._id || ''}`)}
           >
             <View style={styles.cardLeft}>
-              <Text style={styles.title}>{item.recipient || item.customerName || 'Người nhận'}</Text>
+              <Text style={styles.title}>{item.recipient || item.customerName || t('orders.recipient')}</Text>
               <Text style={styles.subtitle} numberOfLines={2}>{item.address || (item.destination && `${item.destination.lat}, ${item.destination.lng}`) || ''}</Text>
             </View>
             <View style={styles.cardRight}>
@@ -46,12 +49,12 @@ export default function TabsIndex() {
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
             <IconSymbol name="inventory" size={22} color={Colors.light.tabIconInfo} />
-            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconInfo }]}>Đơn hàng</Text>
+            <Text style={[styles.bottomTabText, { color: Colors.light.tabIconInfo }]}>{t('navigation.orders')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/info')}>
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/profile')}>
             <IconSymbol name="person" size={22} color={'#999'} />
-            <Text style={styles.bottomTabText}>Cá nhân</Text>
+            <Text style={styles.bottomTabText}>{t('navigation.profile')}</Text>
           </TouchableOpacity>
         </View>
       </View>

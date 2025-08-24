@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { AddressWithDirections } from '@/components/AddressWithDirections';
 import { ThemedText } from '@/components/ThemedText';
@@ -10,169 +11,16 @@ import { shipperApi } from '@/lib/shipperApi';
 
 type Order = any;
 
-const TABS = [
-  { key: 'AwaitingPickup', label: 'Chờ lấy hàng' },
-  { key: 'OutForDelivery', label: 'Đang giao' },
-  { key: 'Delivered', label: 'Hoàn thành' },
-  { key: 'Returned', label: 'Trả hàng' }
-];
-
-function OrderCard({ item, onOpen, onAccept, onReject, onUpdateStatus }: { 
-  item: Order; 
-  onOpen: (o: Order) => void; 
-  onAccept: (o: Order) => void; 
-  onReject: (o: Order) => void;
-  onUpdateStatus: (o: Order) => void;
-}) {
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
-  // Get order status display text
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case 'Pending': return 'Chờ xử lý';
-      case 'AwaitingPickup': return 'Chờ lấy hàng';
-      case 'OutForDelivery': return 'Đang giao';
-      case 'Delivered': return 'Hoàn thành';
-      case 'Cancelled': return 'Đã hủy';
-      case 'Returned': return 'Trả hàng';
-      case 'Refunded': return 'Đã hoàn tiền';
-      default: return status;
-    }
-  };
-
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Delivered': return '#4CAF50';
-      case 'OutForDelivery': return '#2196F3';
-      case 'Cancelled': return '#F44336';
-      case 'Pending': return '#FF9800';
-      case 'AwaitingPickup': return '#9C27B0';
-      case 'Returned': return '#FF5722';
-      default: return '#777';
-    }
-  };
-
-  // Check if order can be claimed (unassigned or assigned to current shipper)
-  const canClaim = item.canClaim || !item.assigned_shipper_id || item.assigned_shipper_id === 'current_shipper_id';
-
-  return (
-    <TouchableOpacity style={styles.card} onPress={() => onOpen(item)}>
-      <View style={styles.rowBetween}>
-        <ThemedText type="defaultSemiBold" style={styles.orderId}>
-          #{item.order_id || item._id}
-        </ThemedText>
-        <ThemedText style={styles.total}>
-          {(item.total_amount || item.total || 0).toLocaleString('vi-VN')}₫
-        </ThemedText>
-      </View>
-
-      <View style={{ marginTop: 12 }}>
-        {/* Product name - from order_items.book_id.title (new format) */}
-        <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
-          {item.order_items && item.order_items.length > 0 
-            ? (item.order_items[0].book_id?.title || item.order_items[0].title || 'Không có tên sản phẩm')
-            : 'Không có sản phẩm'
-          }
-        </ThemedText>
-        
-        {/* Customer info - from summary object (new format) with fallback */}
-        <ThemedText style={{ marginTop: 8, color: '#666', fontSize: 14 }}>
-          {item.summary?.customerName || 
-           item.shipping_address_snapshot?.receiver_name || 
-           item.user_id?.full_name || 
-           item.recipient || 
-           item.customer_name ||
-           'Không có tên'} | {(() => {
-             // Helper function to check if phone number is valid
-             const getValidPhone = (phone: any) => {
-               if (!phone || phone === '' || phone === 'undefined' || phone === 'null') return null;
-               return phone;
-             };
-             
-             // Try to get phone from various sources
-             const phone = getValidPhone(item.summary?.customerPhone) ||
-                          getValidPhone(item.shipping_address_snapshot?.phone_number) ||
-                          getValidPhone(item.shipping_address_snapshot?.phone) ||
-                          getValidPhone(item.user_id?.phone_number) ||
-                          getValidPhone(item.phone) ||
-                          getValidPhone(item.customer_phone) ||
-                          getValidPhone(item.contact_phone);
-             
-             return phone || 'Không có số điện thoại';
-           })()}
-        </ThemedText>
-        
-        {/* Address - from summary object (new format) with fallback */}
-        <AddressWithDirections
-          address={item.summary?.address || 
-                   item.shipping_address_snapshot?.fullAddress || 
-                   item.shipping_address_snapshot?.address_detail || 
-                   item.address_id?.fullAddress || 
-                   item.address}
-          coordinates={item.shipping_address_snapshot?.coordinates || 
-                     item.address_id?.coordinates}
-          showDirectionsButton={false}
-          style={{ marginTop: 6 }}
-        />
-        
-        {/* Date - from order_date or createdAt */}
-        <ThemedText style={{ marginTop: 6, color: '#999', fontSize: 12 }}>
-          {formatDate(item.order_date || item.createdAt)}
-        </ThemedText>
-      </View>
-
-      <View style={styles.actionsRow}>
-        {/* Show action buttons for orders that can be accepted */}
-        {item.order_status === 'AwaitingPickup' && canClaim ? (
-          <TouchableOpacity style={styles.accept} onPress={() => onAccept(item)}>
-            <ThemedText style={{ color: 'white', fontWeight: '600' }}>Nhận đơn hàng</ThemedText>
-          </TouchableOpacity>
-        ) : (
-          <>
-            {/* Status display */}
-            <ThemedText style={{ 
-              color: getStatusColor(item.order_status), 
-              fontWeight: '600',
-              fontSize: 14
-            }}>
-              {getStatusDisplay(item.order_status)}
-            </ThemedText>
-            
-            {/* Update status button for orders in delivery */}
-            {(item.order_status === 'OutForDelivery' || item.order_status === 'AwaitingPickup') && (
-              <TouchableOpacity 
-                style={[styles.updateStatus, { backgroundColor: getStatusColor(item.order_status) }]} 
-                onPress={() => onUpdateStatus(item)}
-              >
-                <ThemedText style={{ color: 'white', fontWeight: '600', fontSize: 12 }}>
-                  Cập nhật
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 export default function ShipperOrders() {
+  const { t } = useTranslation();
+  
+  const TABS = [
+    { key: 'AwaitingPickup', label: t('orderStatus.awaitingPickup') },
+    { key: 'OutForDelivery', label: t('orderStatus.outForDelivery') },
+    { key: 'Delivered', label: t('orderStatus.delivered') },
+    { key: 'Returned', label: t('orderStatus.returned') }
+  ];
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [tab, setTab] = useState<string>('AwaitingPickup');
   const [refreshing, setRefreshing] = useState(false);
@@ -196,7 +44,7 @@ export default function ShipperOrders() {
   // Fetch orders from shipper API
   const fetchOrders = async (pageNum: number = 1, append: boolean = false) => {
     if (pageNum === 1) {
-    setRefreshing(true);
+      setRefreshing(true);
     } else {
       setLoadingMore(true);
     }
@@ -216,42 +64,12 @@ export default function ShipperOrders() {
       else if (res.data && Array.isArray(res.data)) list = res.data;
       else list = res.orders || res.data || [];
 
-      // Debug: log response data structure
-      console.log('[Shipper Orders] API Response:', {
-        hasResponse: !!res,
-        responseType: typeof res,
-        hasOrders: !!(res && res.orders),
-        ordersCount: res?.orders?.length || 0,
-        firstOrder: list[0] ? {
-          id: list[0]._id,
-          order_id: list[0].order_id,
-          hasSummary: !!list[0].summary,
-          summary: list[0].summary,
-          hasShippingAddress: !!list[0].shipping_address_snapshot,
-          shippingAddress: list[0].shipping_address_snapshot,
-          hasUser: !!list[0].user_id,
-          user: list[0].user_id,
-          hasRecipient: !!list[0].recipient,
-          recipient: list[0].recipient,
-          hasPhone: !!list[0].phone,
-          phone: list[0].phone,
-          // Log all possible phone fields
-          allPhoneFields: {
-            summary_customerPhone: list[0].summary?.customerPhone,
-            shipping_phone_number: list[0].shipping_address_snapshot?.phone_number,
-            shipping_phone: list[0].shipping_address_snapshot?.phone,
-            user_phone: list[0].user_id?.phone_number,
-            direct_phone: list[0].phone,
-            customer_phone: list[0].customer_phone,
-            contact_phone: list[0].contact_phone
-          }
-        } : null
-      });
+
 
       if (append) {
         setOrders(prev => [...prev, ...list]);
       } else {
-      setOrders(list);
+        setOrders(list);
       }
       
       // Check if there are more orders
@@ -259,7 +77,7 @@ export default function ShipperOrders() {
       setPage(pageNum);
     } catch (err: any) {
       console.warn('Failed to load shipper orders', err?.message || err);
-      Alert.alert('Lỗi', 'Không thể tải danh sách đơn hàng');
+      Alert.alert(t('common.error'), t('orders.loadError'));
     } finally {
       setRefreshing(false);
       setLoadingMore(false);
@@ -267,43 +85,58 @@ export default function ShipperOrders() {
     }
   };
 
-  // Check user verification and fetch orders on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const me = await shipperApi.getCurrentUser();
-        const isShipper = Array.isArray(me?.roles) && me.roles.includes('shipper');
-        const isVerified = !!me?.shipper_verified;
-        setVerified(isShipper && isVerified);
-        
-        if (!isShipper) {
-          router.replace('/(tabs)');
-          return;
-        }
-        if (!isVerified) {
-          router.replace('/application');
-          return;
-        }
-        
-        // Load orders after verification
-        fetchOrders(1);
-      } catch (e) {
-        console.warn('Failed to fetch current user', e);
-        setLoading(false);
-      }
-    })();
-  }, [router]);
-
-  // Refetch orders when tab changes
-  useEffect(() => {
-    if (verified) {
-      setPage(1);
-      fetchOrders(1);
+  // Handle order actions
+  const handleAcceptOrder = async (order: Order) => {
+    if (updatingIds.includes(order._id)) return;
+    
+    setUpdatingIds(prev => [...prev, order._id]);
+    try {
+      await shipperApi.acceptOrder(order._id);
+      Alert.alert(t('common.success'), t('messages.orderAccepted'));
+      fetchOrders(1, false);
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err?.message || t('orders.acceptError'));
+    } finally {
+      setUpdatingIds(prev => prev.filter(id => id !== order._id));
     }
-  }, [tab, verified]);
+  };
+
+  const handleRejectOrder = async (order: Order) => {
+    if (updatingIds.includes(order._id)) return;
+    
+    setUpdatingIds(prev => [...prev, order._id]);
+    try {
+      await shipperApi.rejectOrder(order._id);
+      Alert.alert(t('common.success'), t('messages.orderRejected'));
+      fetchOrders(1, false);
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err?.message || t('orders.rejectError'));
+    } finally {
+      setUpdatingIds(prev => prev.filter(id => id !== order._id));
+    }
+  };
+
+  const handleUpdateStatus = async (order: Order, newStatus: string) => {
+    if (updatingIds.includes(order._id)) return;
+    
+    setUpdatingIds(prev => [...prev, order._id]);
+    try {
+      await shipperApi.updateStatus(order._id, { order_status: newStatus });
+      Alert.alert(t('common.success'), t('messages.statusUpdated'));
+      fetchOrders(1, false);
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err?.message || t('orders.updateStatusError'));
+    } finally {
+      setUpdatingIds(prev => prev.filter(id => id !== order._id));
+    }
+  };
+
+  const handleOpenOrder = (order: Order) => {
+    router.push(`/shipper/order/${order._id}`);
+  };
 
   const onRefresh = () => {
-    fetchOrders(1);
+    fetchOrders(1, false);
   };
 
   const loadMore = () => {
@@ -312,244 +145,280 @@ export default function ShipperOrders() {
     }
   };
 
-  // Handle accept order
-  const handleAccept = async (o: Order) => {
-    const orderId = o._id || o.order_id;
-    if (!orderId) return;
+  useEffect(() => {
+    fetchOrders(1, false);
+  }, [tab]);
 
-    setUpdatingIds(prev => [...prev, orderId]);
-    
-    try {
-      // Optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === o._id ? { ...p, order_status: 'OutForDelivery' } : p
-      ));
-      
-      await shipperApi.acceptOrder(orderId);
-      Alert.alert('Thành công', 'Đã nhận đơn hàng thành công');
-      // Refresh orders to get updated data
-      fetchOrders(1);
-    } catch (err: any) {
-      console.warn('Accept order failed', err?.message || err);
-      // Revert optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === o._id ? { ...p, order_status: o.order_status } : p
-      ));
-      Alert.alert('Lỗi', err?.message || 'Không thể nhận đơn hàng');
-    } finally {
-      setUpdatingIds(prev => prev.filter(id => id !== orderId));
-    }
-  };
-
-  // Handle reject order
-  const handleReject = async (o: Order) => {
-    const orderId = o._id || o.order_id;
-    if (!orderId) return;
-
-    setUpdatingIds(prev => [...prev, orderId]);
-    
-    try {
-      // Optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === o._id ? { ...p, order_status: 'Cancelled' } : p
-      ));
-      
-      await shipperApi.rejectOrder(orderId);
-      Alert.alert('Thành công', 'Đã từ chối đơn hàng');
-      // Refresh orders to get updated data
-      fetchOrders(1);
-    } catch (err: any) {
-      console.warn('Reject order failed', err?.message || err);
-      // Revert optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === o._id ? { ...p, order_status: o.order_status } : p
-      ));
-      Alert.alert('Lỗi', err?.message || 'Không thể từ chối đơn hàng');
-    } finally {
-      setUpdatingIds(prev => prev.filter(id => id !== orderId));
-    }
-  };
-
-  // Handle status update with note input
-  const handleUpdateStatus = (order: Order) => {
-    const options = [
-      { text: 'Đang giao', value: 'OutForDelivery' },
-      { text: 'Hoàn thành', value: 'Delivered' },
-      { text: 'Trả hàng', value: 'Returned' },
-      { text: 'Huỷ', style: 'cancel' }
-    ];
-
-    Alert.alert(
-      'Cập nhật trạng thái', 
-      `Chọn trạng thái cho đơn hàng #${order.order_id || order._id}`,
-      options.map(o => ({
-        text: o.text,
-        style: o.style as any,
-        onPress: async () => {
-          if (!o.value) return;
-          
-          // For delivered status, ask for confirmation and note
-          if (o.value === 'Delivered') {
-            Alert.prompt(
-              'Ghi chú giao hàng',
-              'Nhập ghi chú (tùy chọn):',
-              [
-                { text: 'Huỷ', style: 'cancel' },
-                { 
-                  text: 'Hoàn thành', 
-                  onPress: async (note) => {
-                    await updateOrderStatus(order, o.value, note);
-                  }
-                }
-              ],
-              'plain-text',
-              'Giao hàng thành công'
-            );
-            return;
-          }
-          
-          // For other statuses, ask for note
-          Alert.prompt(
-            'Ghi chú',
-            'Nhập ghi chú (tùy chọn):',
-            [
-              { text: 'Huỷ', style: 'cancel' },
-              { 
-                text: 'Cập nhật', 
-                onPress: async (note) => {
-                  await updateOrderStatus(order, o.value, note);
-                }
-              }
-            ],
-            'plain-text'
-          );
-        }
-      }))
-    );
-  };
-
-  // Update order status
-  const updateOrderStatus = async (order: Order, newStatus: string, note?: string) => {
-    const orderId = order._id || order.order_id;
-    if (!orderId) return;
-
-    setUpdatingIds(prev => [...prev, orderId]);
-    
-    try {
-      // Optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === order._id ? { ...p, order_status: newStatus } : p
-      ));
-      
-      await shipperApi.updateStatus(orderId, { 
-        order_status: newStatus,
-        note: note || ''
-      });
-      
-      const statusText = newStatus === 'Delivered' ? 'Hoàn thành' : 
-                        newStatus === 'OutForDelivery' ? 'Đang giao' :
-                        newStatus === 'Returned' ? 'Trả hàng' : newStatus;
-      
-      Alert.alert('Thành công', `Đã cập nhật trạng thái: ${statusText}`);
-      // Refresh orders to get updated data
-      fetchOrders(1);
-    } catch (err: any) {
-      console.warn('Update status failed', err?.message || err);
-      // Revert optimistic update
-      setOrders(prev => prev.map(p => 
-        p._id === order._id ? { ...p, order_status: order.order_status } : p
-      ));
-      Alert.alert('Lỗi', err?.message || 'Không thể cập nhật trạng thái');
-    } finally {
-      setUpdatingIds(prev => prev.filter(id => id !== orderId));
-    }
-  };
-
-  // Show loading state
   if (loading) {
     return (
-      <ThemedView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>Đang tải đơn hàng...</Text>
-      </ThemedView>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
+      </View>
     );
   }
 
   return (
-    <ThemedView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <ThemedView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Đơn hàng Shipper</Text>
-        <Text style={styles.headerSub}>Quản lý và cập nhật trạng thái đơn hàng</Text>
+        <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+          {t('orders.shipperOrders')}
+        </ThemedText>
+        <ThemedText style={styles.headerSub}>
+          {t('orders.manageAndUpdateStatus')}
+        </ThemedText>
       </View>
 
+            {/* Tab Bar */}
       <View style={styles.tabBar}>
-        {TABS.map(t => (
-          <TouchableOpacity 
-            key={t.key} 
-            style={[styles.tab, tab === t.key && styles.tabActive]} 
-            onPress={() => setTab(t.key)}
-          >
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabContainer}
+        >
+          {TABS.map((tabItem) => (
+            <TouchableOpacity
+              key={tabItem.key}
+              style={[styles.tab, tab === tabItem.key && styles.tabActive]}
+              onPress={() => setTab(tabItem.key)}
+            >
+              <ThemedText 
+                style={[styles.tabText, tab === tabItem.key && styles.tabTextActive]}
+              >
+                {tabItem.label}
+              </ThemedText>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
+      {/* Orders List */}
       <FlatList
         data={filtered}
-        keyExtractor={(i) => (i._id || i.order_id || Math.random()).toString()}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.1}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <OrderCard
             item={item}
-            onOpen={(o) => router.push(`./order/${o._id || o.order_id}`)}
-            onAccept={handleAccept}
-            onReject={handleReject}
-            onUpdateStatus={handleUpdateStatus}
+            onOpen={handleOpenOrder}
+            onAccept={handleAcceptOrder}
+            onReject={handleRejectOrder}
+                         onUpdateStatus={(order) => handleUpdateStatus(order, 'Delivered')}
+            updatingIds={updatingIds}
+            t={t}
           />
         )}
-        contentContainerStyle={{ padding: 12 }}
-        ListEmptyComponent={() => (
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.1}
+        ListEmptyComponent={
           <View style={styles.empty}>
-            {refreshing ? (
-              <View style={{ alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#4A90E2" />
-                <Text style={{ marginTop: 8 }}>Đang tải đơn hàng…</Text>
-              </View>
-            ) : (
-              <Text style={{ color: '#666', fontSize: 16 }}>
-                Không có đơn hàng nào trong tab "{TABS.find(t => t.key === tab)?.label}"
-              </Text>
-            )}
+            <Text style={styles.emptyText}>
+              {t('orders.noOrdersInTab', { tab: TABS.find(t => t.key === tab)?.label })}
+            </Text>
           </View>
-        )}
-        ListFooterComponent={() => 
+        }
+        ListFooterComponent={
           loadingMore ? (
             <View style={styles.loadingMore}>
               <ActivityIndicator size="small" color="#4A90E2" />
-              <Text style={{ marginTop: 8, color: '#666' }}>Đang tải thêm...</Text>
+              <Text style={styles.loadingMoreText}>{t('common.loading')}</Text>
             </View>
           ) : null
         }
+        contentContainerStyle={styles.listContainer}
       />
     </ThemedView>
   );
 }
 
+function OrderCard({ 
+  item, 
+  onOpen, 
+  onAccept, 
+  onReject, 
+  onUpdateStatus, 
+  updatingIds,
+  t 
+}: { 
+  item: Order; 
+  onOpen: (o: Order) => void; 
+  onAccept: (o: Order) => void; 
+  onReject: (o: Order) => void;
+  onUpdateStatus: (o: Order) => void;
+  updatingIds: string[];
+  t: (key: string) => string;
+}) {
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get order status display text
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'Pending': return t('orderStatus.pending');
+      case 'AwaitingPickup': return t('orderStatus.awaitingPickup');
+      case 'OutForDelivery': return t('orderStatus.outForDelivery');
+      case 'Delivered': return t('orderStatus.delivered');
+      case 'Cancelled': return t('orderStatus.cancelled');
+      case 'Returned': return t('orderStatus.returned');
+      case 'Refunded': return t('orderStatus.refunded');
+      default: return status;
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Delivered': return '#4CAF50';
+      case 'OutForDelivery': return '#2196F3';
+      case 'Cancelled': return '#F44336';
+      case 'Pending': return '#FF9800';
+      case 'AwaitingPickup': return '#9C27B0';
+      case 'Returned': return '#FF5722';
+      default: return '#777';
+    }
+  };
+
+  // Check if order can be claimed (unassigned or assigned to current shipper)
+  const canClaim = item.canClaim || !item.assigned_shipper_id || item.assigned_shipper_id === 'current_shipper_id';
+  const isUpdating = updatingIds.includes(item._id);
+
+  return (
+    <TouchableOpacity style={styles.card} onPress={() => onOpen(item)}>
+      <View style={styles.rowBetween}>
+        <ThemedText type="defaultSemiBold" style={styles.orderId}>
+          #{item.order_id || item._id}
+        </ThemedText>
+        <ThemedText style={styles.total}>
+          {(item.total_amount || item.total || 0).toLocaleString('vi-VN')}₫
+        </ThemedText>
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        {/* Product name */}
+        <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
+          {item.order_items && item.order_items.length > 0 
+            ? (item.order_items[0].book_id?.title || item.order_items[0].title || t('orders.noProductName'))
+            : t('orders.noProducts')
+          }
+        </ThemedText>
+        
+        {/* Customer info */}
+        <ThemedText style={{ marginTop: 8, color: '#666', fontSize: 14 }}>
+          {item.summary?.customerName || 
+           item.shipping_address_snapshot?.receiver_name || 
+           item.user_id?.full_name || 
+           item.recipient || 
+           item.customer_name ||
+           t('orders.unknownCustomer')}
+        </ThemedText>
+
+        {/* Phone number */}
+        <ThemedText style={{ marginTop: 4, color: '#666', fontSize: 14 }}>
+          {item.summary?.customerPhone || 
+           item.shipping_address_snapshot?.phone_number || 
+           item.shipping_address_snapshot?.phone ||
+           item.user_id?.phone_number || 
+           item.phone || 
+           item.customer_phone ||
+           item.contact_phone ||
+           t('orders.noPhone')}
+        </ThemedText>
+
+        {/* Address */}
+        <View style={{ marginTop: 8 }}>
+          <AddressWithDirections 
+            address={item.summary?.customerAddress || 
+                    item.shipping_address_snapshot?.fullAddress || 
+                    item.shipping_address_snapshot?.address_detail ||
+                    item.address || 
+                    t('orders.noAddress')}
+          />
+        </View>
+
+        {/* Status */}
+        <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+          <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.order_status) }]} />
+          <ThemedText style={{ color: getStatusColor(item.order_status), fontSize: 14, fontWeight: '500' }}>
+            {getStatusDisplay(item.order_status)}
+          </ThemedText>
+        </View>
+
+        {/* Date */}
+        <ThemedText style={{ marginTop: 4, color: '#999', fontSize: 12 }}>
+          {formatDate(item.created_at || item.order_date || new Date().toISOString())}
+        </ThemedText>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.actionsRow}>
+        {canClaim && item.order_status === 'AwaitingPickup' && (
+          <TouchableOpacity 
+            style={[styles.accept, { opacity: isUpdating ? 0.6 : 1 }]}
+            onPress={() => onAccept(item)}
+            disabled={isUpdating}
+          >
+            <Text style={styles.buttonText}>{t('actions.acceptOrder')}</Text>
+          </TouchableOpacity>
+        )}
+
+        {item.order_status === 'OutForDelivery' && (
+          <>
+            <TouchableOpacity 
+              style={[styles.updateStatus, { backgroundColor: '#4CAF50', opacity: isUpdating ? 0.6 : 1 }]}
+                             onPress={() => onUpdateStatus(item)}
+              disabled={isUpdating}
+            >
+              <Text style={styles.buttonText}>{t('actions.markDelivered')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.updateStatus, { backgroundColor: '#FF5722', opacity: isUpdating ? 0.6 : 1 }]}
+                             onPress={() => onUpdateStatus(item)}
+              disabled={isUpdating}
+            >
+              <Text style={styles.buttonText}>{t('actions.markReturned')}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F8FA',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff'
+    backgroundColor: '#F7F8FA',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666'
+    color: '#666',
+  },
+  listContainer: {
+    padding: 16,
   },
   header: { 
     padding: 16, 
@@ -568,18 +437,22 @@ const styles = StyleSheet.create({
     fontSize: 14 
   },
   tabBar: { 
-    flexDirection: 'row', 
     backgroundColor: '#fff', 
-    paddingVertical: 12, 
-    paddingHorizontal: 16, 
-    justifyContent: 'space-between' 
+    paddingVertical: 16, 
+    paddingHorizontal: 16
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8
   },
   tab: { 
-    flex: 1, 
     paddingVertical: 12, 
+    paddingHorizontal: 16,
     alignItems: 'center', 
     borderBottomWidth: 3, 
-    borderBottomColor: 'transparent' 
+    borderBottomColor: 'transparent',
+    marginHorizontal: 4
   },
   tabActive: { 
     borderBottomColor: '#4A90E2' 
@@ -587,11 +460,15 @@ const styles = StyleSheet.create({
   tabText: { 
     color: '#777', 
     fontSize: 14, 
-    fontWeight: '500' 
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 18
   },
   tabTextActive: { 
     color: '#4A90E2', 
-    fontWeight: '700' 
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 18
   },
   card: { 
     padding: 16, 
@@ -621,6 +498,12 @@ const styles = StyleSheet.create({
     fontWeight: '700', 
     fontSize: 16 
   },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
   actionsRow: { 
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
@@ -634,18 +517,38 @@ const styles = StyleSheet.create({
     paddingVertical: 10, 
     borderRadius: 8 
   },
-
+  reject: { 
+    backgroundColor: '#F44336', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
+    borderRadius: 8 
+  },
   updateStatus: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6
   },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   empty: { 
     padding: 24, 
     alignItems: 'center' 
   },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
   loadingMore: {
     paddingVertical: 16,
     alignItems: 'center'
+  },
+  loadingMoreText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
   }
 });

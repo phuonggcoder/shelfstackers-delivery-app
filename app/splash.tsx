@@ -1,9 +1,11 @@
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 export default function Splash() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { token, user, loading } = useAuth();
 
@@ -58,7 +60,7 @@ export default function Splash() {
           }
         }
       })()}
-      <Text style={styles.title}>ShelfStacker Delivery</Text>
+      <Text style={styles.title}>{t('app.title')}</Text>
     </View>
   );
 }

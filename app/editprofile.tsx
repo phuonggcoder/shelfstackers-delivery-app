@@ -7,16 +7,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   // Hàm chọn ảnh và upload lên server
   // Tự động lưu profile sau khi upload avatar thành công
   const pickAndUploadAvatar = async () => {
     // Chọn ảnh từ thư viện
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      alert('Bạn cần cấp quyền truy cập thư viện ảnh');
+      alert(t('common.error'), t('profile.needPhotoPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -49,12 +51,12 @@ export default function EditProfileScreen() {
     const uploadData = await uploadRes.json();
     if (uploadData.success && uploadData.user && uploadData.user.avatar) {
       setAvatar(uploadData.user.avatar);
-      alert('Cập nhật avatar thành công!');
+      alert(t('common.success'), t('messages.avatarUpdated'));
     } else if (uploadData.url) {
       setAvatar(uploadData.url);
-      alert('Cập nhật avatar thành công!');
+      alert(t('common.success'), t('messages.avatarUpdated'));
     } else {
-      alert(uploadData.message || 'Upload avatar thất bại');
+      alert(t('common.error'), uploadData.message || t('profile.avatarUploadFailed'));
     }
   };
   const { user, token, refreshUser } = useAuth();
@@ -146,22 +148,22 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Cập nhật thông tin cá nhân</Text>
+      <Text style={styles.title}>{t('profile.updatePersonalInfo')}</Text>
       <View style={styles.avatarContainer}>
         <TouchableOpacity onPress={pickAndUploadAvatar}>
           <Image source={{ uri: avatar || 'https://i.imgur.com/8Km9tLL.png' }} style={styles.avatar} />
         </TouchableOpacity>
-        <Text style={{ color: '#888', marginBottom: 8 }}>Nhấn vào ảnh để chọn ảnh mới</Text>
+        <Text style={{ color: '#888', marginBottom: 8 }}>{t('profile.tapImageToSelect')}</Text>
       </View>
       <TextInput
         style={styles.input}
-        placeholder="Họ và tên"
+        placeholder={t('profile.fullName')}
         value={fullName}
         onChangeText={setFullName}
       />
       <TextInput
         style={styles.input}
-        placeholder="Số điện thoại"
+        placeholder={t('profile.phoneNumber')}
         value={phoneNumber}
         onChangeText={setPhoneNumber}
         keyboardType="phone-pad"
@@ -171,15 +173,15 @@ export default function EditProfileScreen() {
           selectedValue={gender}
           onValueChange={setGender}
         >
-          <Picker.Item label="Nam" value="male" />
-          <Picker.Item label="Nữ" value="female" />
-          <Picker.Item label="Khác" value="other" />
+          <Picker.Item label={t('profile.male')} value="male" />
+          <Picker.Item label={t('profile.female')} value="female" />
+          <Picker.Item label={t('profile.other')} value="other" />
         </Picker>
       </View>
       <TouchableOpacity onPress={() => setShowDatePicker(true)}>
         <TextInput
           style={styles.input}
-          placeholder="Ngày sinh (yyyy-mm-dd)"
+          placeholder={t('profile.birthDate')}
           value={birthDate ? birthDate.toISOString().slice(0, 10) : ''}
           editable={false}
         />
@@ -196,7 +198,7 @@ export default function EditProfileScreen() {
         />
       )}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+        <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -233,7 +235,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   saveButton: {
-    backgroundColor: '#219653',
+    backgroundColor: '#4A90E2',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',

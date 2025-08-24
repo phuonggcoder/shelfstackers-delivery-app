@@ -7,9 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function OrderDetail() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const id = String(params.id || params.orderId || '');
   const [order, setOrder] = useState<any>(null);
@@ -28,7 +30,7 @@ export default function OrderDetail() {
         setOrder(ord || null);
       } catch (e) {
         console.warn('Failed to load order', e);
-        Alert.alert('Lỗi', 'Không thể tải thông tin đơn hàng');
+        Alert.alert(t('common.error'), t('orders.loadOrderError'));
       } finally {
         setLoading(false);
       }
@@ -53,7 +55,7 @@ export default function OrderDetail() {
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ThemedText style={styles.loadingText}>Đang tải thông tin đơn hàng...</ThemedText>
+        <ThemedText style={styles.loadingText}>{t('orders.loadingOrderInfo')}</ThemedText>
       </ThemedView>
     );
   }
@@ -61,7 +63,7 @@ export default function OrderDetail() {
   if (!order) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ThemedText style={styles.errorText}>Không tìm thấy đơn hàng</ThemedText>
+        <ThemedText style={styles.errorText}>{t('orders.orderNotFound')}</ThemedText>
       </ThemedView>
     );
   }
@@ -69,13 +71,13 @@ export default function OrderDetail() {
   // Get order status display
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case 'Pending': return 'Chờ xử lý';
-      case 'AwaitingPickup': return 'Chờ lấy hàng';
-      case 'OutForDelivery': return 'Đang giao hàng';
-      case 'Delivered': return 'Hoàn thành';
-      case 'Cancelled': return 'Đã hủy';
-      case 'Returned': return 'Trả hàng';
-      case 'Refunded': return 'Đã hoàn tiền';
+      case 'Pending': return t('orderStatus.pending');
+      case 'AwaitingPickup': return t('orderStatus.awaitingPickup');
+      case 'OutForDelivery': return t('orderStatus.outForDelivery');
+      case 'Delivered': return t('orderStatus.delivered');
+      case 'Cancelled': return t('orderStatus.cancelled');
+      case 'Returned': return t('orderStatus.returned');
+      case 'Refunded': return t('orderStatus.refunded');
       default: return status;
     }
   };
@@ -96,11 +98,11 @@ export default function OrderDetail() {
   // Get payment status display
   const getPaymentStatusDisplay = (paymentStatus: string) => {
     switch (paymentStatus) {
-      case 'Completed': return 'Đã thanh toán';
-      case 'Pending': return 'Chưa thanh toán';
-      case 'Processing': return 'Đang xử lý';
-      case 'Failed': return 'Thanh toán thất bại';
-      default: return 'Chưa thanh toán';
+      case 'Completed': return t('payment.completed');
+      case 'Pending': return t('payment.pending');
+              case 'Processing': return t('payment.processing');
+        case 'Failed': return t('payment.failed');
+      default: return t('payment.pending');
     }
   };
 
@@ -187,11 +189,11 @@ export default function OrderDetail() {
   // Handle return order
   const handleReturnOrder = () => {
     Alert.alert(
-      'Xác nhận trả hàng',
-      'Bạn có chắc muốn đánh dấu đơn hàng này là trả hàng?',
+      t('orders.confirmReturn'),
+      t('orders.confirmReturnMessage'),
       [
-        { text: 'Không', style: 'cancel' },
-        { text: 'Có', onPress: () => returnOrder() }
+        { text: t('common.no'), style: 'cancel' },
+        { text: t('common.yes'), onPress: () => returnOrder() }
       ]
     );
   };
@@ -199,11 +201,11 @@ export default function OrderDetail() {
   // Handle complete order
   const handleCompleteOrder = () => {
     Alert.alert(
-      'Xác nhận hoàn thành',
-      'Bạn có chắc muốn đánh dấu đơn hàng này là hoàn thành?',
+      t('orders.confirmComplete'),
+      t('orders.confirmCompleteMessage'),
       [
-        { text: 'Không', style: 'cancel' },
-        { text: 'Có', onPress: () => completeOrder() }
+        { text: t('common.no'), style: 'cancel' },
+        { text: t('common.yes'), onPress: () => completeOrder() }
       ]
     );
   };
@@ -213,10 +215,10 @@ export default function OrderDetail() {
     setUpdating(true);
     try {
       await shipperApi.updateStatus(id, { order_status: 'Returned' });
-      Alert.alert('Thành công', 'Đã đánh dấu đơn hàng là trả hàng');
+      Alert.alert(t('common.success'), t('messages.orderMarkedReturned'));
       router.back();
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể đánh dấu trả hàng');
+      Alert.alert(t('common.error'), error.message || t('orders.cannotMarkReturned'));
     } finally {
       setUpdating(false);
     }
@@ -227,10 +229,10 @@ export default function OrderDetail() {
     setUpdating(true);
     try {
       await shipperApi.updateStatus(id, { order_status: 'Delivered' });
-      Alert.alert('Thành công', 'Đã hoàn thành đơn hàng');
+      Alert.alert(t('common.success'), t('messages.orderCompleted'));
       router.back();
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể hoàn thành đơn hàng');
+      Alert.alert(t('common.error'), error.message || t('orders.cannotComplete'));
     } finally {
       setUpdating(false);
     }
@@ -239,7 +241,7 @@ export default function OrderDetail() {
   // Copy order ID to clipboard
   const copyOrderId = () => {
     // In a real app, you'd use Clipboard API
-    Alert.alert('Thông báo', 'Đã sao chép mã đơn hàng');
+    Alert.alert(t('common.notification'), t('orders.orderIdCopied'));
   };
 
   // Get valid phone number from order
@@ -267,7 +269,7 @@ export default function OrderDetail() {
     const phoneNumber = getValidPhoneNumber();
     
     if (!phoneNumber) {
-      Alert.alert('Lỗi', 'Không tìm thấy số điện thoại hợp lệ');
+      Alert.alert(t('common.error'), t('orders.noValidPhone'));
       return;
     }
 
@@ -278,10 +280,10 @@ export default function OrderDetail() {
       if (canOpen) {
         await Linking.openURL(`tel:${phoneNumber}`);
       } else {
-        Alert.alert('Lỗi', 'Không thể mở ứng dụng điện thoại');
+        Alert.alert(t('common.error'), t('orders.cannotOpenPhoneApp'));
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể thực hiện cuộc gọi');
+              Alert.alert(t('common.error'), t('orders.cannotMakeCall'));
     }
   };
 
@@ -290,7 +292,7 @@ export default function OrderDetail() {
     const phoneNumber = getValidPhoneNumber();
     
     if (!phoneNumber) {
-      Alert.alert('Lỗi', 'Không tìm thấy số điện thoại hợp lệ');
+      Alert.alert(t('common.error'), t('orders.noValidPhone'));
       return;
     }
 
@@ -301,10 +303,10 @@ export default function OrderDetail() {
       if (canOpen) {
         await Linking.openURL(`sms:${phoneNumber}`);
       } else {
-        Alert.alert('Lỗi', 'Không thể mở ứng dụng tin nhắn');
+        Alert.alert(t('common.error'), t('orders.cannotOpenSMSApp'));
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể mở ứng dụng tin nhắn');
+      Alert.alert(t('common.error'), t('orders.cannotOpenSMSApp'));
     }
   };
 
@@ -322,7 +324,7 @@ export default function OrderDetail() {
     } else if (address) {
       await openDirections(address);
     } else {
-      Alert.alert('Lỗi', 'Không tìm thấy địa chỉ giao hàng');
+      Alert.alert(t('common.error'), t('orders.noShippingAddress'));
     }
   };
 
@@ -336,14 +338,14 @@ export default function OrderDetail() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ThemedText style={styles.backButtonText}>←</ThemedText>
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Chi tiết đơn hàng</ThemedText>
+        <ThemedText style={styles.headerTitle}>{t('orders.orderDetail')}</ThemedText>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Recipient Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Người nhận</ThemedText>
+            <ThemedText style={styles.sectionTitle}>{t('orders.recipient')}</ThemedText>
                          <View style={styles.recipientActions}>
                <TouchableOpacity 
                  style={[styles.actionButton, order.order_status === 'AwaitingPickup' && styles.actionButtonDisabled]} 
@@ -387,10 +389,10 @@ export default function OrderDetail() {
                 {order.user_id?.full_name || 
                  order.shipping_address_snapshot?.receiver_name || 
                  order.recipient || 
-                 'Không có tên'}
+                 t('orders.noName')}
               </ThemedText>
               <ThemedText style={styles.recipientPhone}>
-                {getValidPhoneNumber() || 'Không có số điện thoại'}
+                {getValidPhoneNumber() || t('orders.noPhone')}
               </ThemedText>
               <AddressWithDirections
                 address={order.summary?.address || 
@@ -413,13 +415,13 @@ export default function OrderDetail() {
             <View style={styles.sectionIcon}>
               <ThemedText style={styles.iconText}>📋</ThemedText>
             </View>
-            <ThemedText style={styles.sectionTitle}>Danh sách sản phẩm</ThemedText>
+            <ThemedText style={styles.sectionTitle}>{t('orders.productList')}</ThemedText>
           </View>
           
           {order.order_items && order.order_items.map((item: any, index: number) => (
             <View key={`product-${index}`} style={styles.productItem}>
               <ThemedText style={styles.productName}>
-                {item.book_id?.title || item.title || 'Không có tên sản phẩm'}
+                {item.book_id?.title || item.title || t('orders.noProductName')}
               </ThemedText>
               <View style={styles.quantityContainer}>
                 <ThemedText style={styles.productQuantity}>x{item.quantity || 1}</ThemedText>
@@ -431,12 +433,12 @@ export default function OrderDetail() {
         {/* Payment Details Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Chi tiết thanh toán</ThemedText>
+            <ThemedText style={styles.sectionTitle}>{t('orders.paymentDetails')}</ThemedText>
           </View>
           
           <View style={styles.paymentDetails}>
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Mã đơn hàng</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.orderId')}</ThemedText>
               <View style={styles.orderIdRow}>
                 <ThemedText style={styles.orderIdText}>
                   {order.order_id || order._id}
@@ -448,7 +450,7 @@ export default function OrderDetail() {
             </View>
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Trạng thái đơn hàng</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.status')}</ThemedText>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.order_status) }]}>
                 <ThemedText style={styles.statusText}>
                   {getStatusDisplay(order.order_status)}
@@ -458,7 +460,7 @@ export default function OrderDetail() {
             
             <View style={styles.paymentRow}>
               <ThemedText style={styles.paymentLabel}>
-                Tạm tính ({order.order_items?.length || 0} sản phẩm)
+                {t('orders.subtotal', { count: order.order_items?.length || 0 })}
               </ThemedText>
               <ThemedText style={styles.paymentValue}>
                 {(order.total_amount || 0).toLocaleString('vi-VN')}₫
@@ -466,28 +468,28 @@ export default function OrderDetail() {
             </View>
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Phí giao hàng</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.shippingFee')}</ThemedText>
               <ThemedText style={styles.paymentValue}>
                 {(order.ship_amount || 0).toLocaleString('vi-VN')}₫
               </ThemedText>
             </View>
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Giảm giá</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.discount')}</ThemedText>
               <ThemedText style={styles.paymentValue}>
                 -{(order.discount_amount || 0).toLocaleString('vi-VN')}₫
               </ThemedText>
             </View>
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Trạng thái thanh toán</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.paymentStatus')}</ThemedText>
               <ThemedText style={[styles.paymentStatus, { color: getPaymentStatusColor(order.payment_id?.payment_status) }]}>
                 {getPaymentStatusDisplay(order.payment_id?.payment_status)}
               </ThemedText>
             </View>
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Phương thức thanh toán</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.paymentMethod')}</ThemedText>
               <ThemedText style={styles.paymentValue}>
                 {getPaymentMethodDisplay(order.payment_id?.payment_method)}
               </ThemedText>
@@ -495,7 +497,7 @@ export default function OrderDetail() {
 
             
             <View style={styles.paymentRow}>
-              <ThemedText style={styles.paymentLabel}>Tổng tiền</ThemedText>
+              <ThemedText style={styles.paymentLabel}>{t('orders.totalAmount')}</ThemedText>
               <ThemedText style={styles.totalAmount}>
                 {totalAmount.toLocaleString('vi-VN')}₫
               </ThemedText>
@@ -512,7 +514,7 @@ export default function OrderDetail() {
             onPress={handleReturnOrder}
             disabled={updating}
           >
-            <ThemedText style={styles.returnButtonText}>Trả hàng</ThemedText>
+            <ThemedText style={styles.returnButtonText}>{t('actions.markReturned')}</ThemedText>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -521,8 +523,8 @@ export default function OrderDetail() {
             disabled={updating}
           >
             <View style={styles.completeButtonContent}>
-              <ThemedText style={styles.completeButtonTextTop}>Hoàn thành</ThemedText>
-              <ThemedText style={styles.completeButtonTextBottom}>đơn hàng</ThemedText>
+              <ThemedText style={styles.completeButtonTextTop}>{t('actions.markDelivered')}</ThemedText>
+              <ThemedText style={styles.completeButtonTextBottom}>{t('orders.order')}</ThemedText>
             </View>
           </TouchableOpacity>
         </View>
@@ -532,11 +534,11 @@ export default function OrderDetail() {
        {order.order_status === 'AwaitingPickup' && (
          <View style={styles.infoMessage}>
            <ThemedText style={styles.infoMessageText}>
-             Đơn hàng này chưa được nhận. Vui lòng quay lại trang danh sách để nhận đơn hàng.
+             {t('orders.orderNotAcceptedYet')}
            </ThemedText>
            <View style={styles.infoMessageNote}>
              <ThemedText style={styles.infoMessageNoteText}>
-               ⚠️ Các chức năng gọi điện, nhắn tin và chỉ đường sẽ được mở khóa sau khi nhận đơn hàng
+               ⚠️ {t('orders.functionsUnlockedAfterAccept')}
              </ThemedText>
            </View>
          </View>

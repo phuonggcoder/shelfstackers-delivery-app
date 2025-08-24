@@ -1,4 +1,5 @@
 import { useDirections } from '@/hooks/useDirections';
+import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -27,7 +28,7 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
   // Xử lý địa chỉ khi component mount
   useEffect(() => {
     const processAddress = async () => {
-      if (address) {
+      if (address && address !== 'Không có địa chỉ') {
         setDisplayAddress(address);
       } else if (coordinates) {
         setLoading(true);
@@ -47,6 +48,9 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
         } finally {
           setLoading(false);
         }
+      } else {
+        // Nếu không có địa chỉ, hiển thị thông báo
+        setDisplayAddress('Không có địa chỉ');
       }
     };
 
@@ -78,6 +82,7 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
         <ThemedText style={styles.addressText}>
           {displayAddress || 'Không có địa chỉ'}
         </ThemedText>
+
       </View>
       
       {/* Nút chỉ đường */}
@@ -86,7 +91,7 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
           style={styles.directionsButton} 
           onPress={handleDirectionsPress}
         >
-          <ThemedText style={styles.directionsButtonText}>🗺️</ThemedText>
+          <Ionicons name="paper-plane" size={16} color="#2196F3" />
         </TouchableOpacity>
       )}
     </View>
@@ -113,12 +118,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   directionsButton: {
-    padding: 8,
+    padding: 6,
     backgroundColor: '#e3f2fd',
-    borderRadius: 16,
+    borderRadius: 12,
     marginLeft: 8,
-  },
-  directionsButtonText: {
-    fontSize: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 24,
+    minHeight: 24
   },
 });

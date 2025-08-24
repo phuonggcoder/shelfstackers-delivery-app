@@ -2,11 +2,13 @@ import { useAuth } from '@/lib/auth';
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Dữ liệu mẫu người dùng
   const sampleUser = {
@@ -24,34 +26,24 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-     
-      {/* Thông tin cá nhân */}
-      <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
-      <View style={styles.profileRow}>
-        <Image source={{ uri: displayUser.avatar || sampleUser.avatar }} style={styles.avatar} />
-        <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{displayUser.full_name}</Text>
-          {/* <Text style={styles.profileUsername}>Username: {displayUser.username}</Text> */}
-          <Text style={styles.profileEmail}>Email: {displayUser.email}</Text>
-          <View style={styles.profilePhoneRow}>
-            <Ionicons name="call" size={18} color="#219653" style={{ marginRight: 6 }} />
-            <Text style={styles.profilePhone}>{displayUser.phone_number}</Text>
-          </View>
-          <Text style={styles.profileGender}>Giới tính: {displayUser.gender === 'male' ? 'Nam' : displayUser.gender === 'female' ? 'Nữ' : displayUser.gender || 'Chưa cập nhật'}</Text>
-          <Text style={styles.profileRoles}>Roles: {Array.isArray(displayUser.roles) ? displayUser.roles.join(', ') : displayUser.roles}</Text>
-        </View>
+      {/* Tiêu đề trên cùng */}
+      <Text style={styles.topTitle}>{t('profile.title')}</Text>
+      {/* Avatar lớn và căn giữa */}
+      <View style={styles.avatarContainer}>
+        <Image source={{ uri: displayUser.avatar || sampleUser.avatar }} style={styles.avatarLarge} />
+        <Text style={styles.profileFullName}>{displayUser.full_name}</Text>
       </View>
-
       {/* Tùy chọn */}
-      <Text style={styles.sectionTitle}>Tùy chọn</Text>
+      <Text style={styles.sectionTitle}>{t('profile.options')}</Text>
       <View style={styles.optionsContainer}>
+  
         <TouchableOpacity
           style={styles.optionButton}
           onPress={() =>
             router.push({
               pathname: '/editprofile',
               params: {
-                full_name: displayUser.fuall_name,
+                full_name: displayUser.full_name,
                 phone_number: displayUser.phone_number,
                 avatar: displayUser.avatar,
                 gender: displayUser.gender,
@@ -59,29 +51,39 @@ export default function Profile() {
             })
           }
         >
-          <FontAwesome name="user" size={20} color="#219653" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Cập nhật tài khoản</Text>
+          <FontAwesome name="user" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
+          <Text style={styles.optionText}>{t('profile.updateAccount')}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => router.push('/profile-detail')}
+        >
+          <MaterialIcons name="info" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
+          <Text style={styles.optionText}>{t('profile.personalInfo')}</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={styles.optionButton}
           onPress={() => router.push('/changepassword')}
         >
-          <Ionicons name="key" size={20} color="#219653" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Đổi mật khẩu</Text>
+          <Ionicons name="key" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
+          <Text style={styles.optionText}>{t('profile.changePassword')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionButton}>
-          <Ionicons name="headset" size={20} color="#219653" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Hỗ trợ</Text>
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={() => router.push('/language')}
+        >
+          <FontAwesome name="language" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
+          <Text style={styles.optionText}>{t('profile.changeLanguage')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionButton} onPress={async () => {
           await signOut();
           router.replace('/login');
         }}>
-          <MaterialIcons name="logout" size={20} color="#219653" style={{ marginRight: 12 }} />
-          <Text style={styles.optionText}>Đăng xuất</Text>
+          <MaterialIcons name="logout" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
+          <Text style={styles.optionText}>{t('profile.logout')}</Text>
         </TouchableOpacity>
       </View>
-
     </View>
   );
 }
@@ -97,30 +99,50 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
-    marginTop: 12,
+    marginTop: 0,
     color: '#222',
   },
-  profileRow: {
-    flexDirection: 'row',
+  avatarContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginTop: 32,
+    marginBottom: 24,
   },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  avatarLarge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#6FCF97',
-    marginRight: 16,
+    borderColor: '#4A90E2',
+    marginBottom: 12,
   },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 16,
+  profileFullName: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#222',
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  infoButton: {
+    backgroundColor: '#4A90E2',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    marginHorizontal: 32,
+  },
+  topTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  infoButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   profileUsername: {
     fontSize: 14,
@@ -214,7 +236,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     fontSize: 13,
-    color: '#219653',
+    color: '#4A90E2',
     marginTop: 2,
     fontWeight: 'bold',
   },

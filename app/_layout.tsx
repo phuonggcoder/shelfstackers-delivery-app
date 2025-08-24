@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/lib/auth';
+import '@/lib/i18n'; // Import i18n configuration
 import * as React from 'react';
 
 export default function RootLayout() {
