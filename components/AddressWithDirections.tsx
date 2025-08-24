@@ -1,6 +1,7 @@
 import { useDirections } from '@/hooks/useDirections';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
 interface AddressWithDirectionsProps {
@@ -78,6 +79,16 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
           {displayAddress || 'Không có địa chỉ'}
         </ThemedText>
       </View>
+      
+      {/* Nút chỉ đường */}
+      {showDirectionsButton && (coordinates || displayAddress) && (
+        <TouchableOpacity 
+          style={styles.directionsButton} 
+          onPress={handleDirectionsPress}
+        >
+          <ThemedText style={styles.directionsButtonText}>🗺️</ThemedText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -100,5 +111,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginLeft: 8,
+  },
+  directionsButton: {
+    padding: 8,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  directionsButtonText: {
+    fontSize: 16,
   },
 });

@@ -184,14 +184,14 @@ export default function OrderDetail() {
     }
   };
 
-  // Handle cancel order
-  const handleCancelOrder = () => {
+  // Handle return order
+  const handleReturnOrder = () => {
     Alert.alert(
-      'Xác nhận hủy đơn hàng',
-      'Bạn có chắc muốn hủy đơn hàng này?',
+      'Xác nhận trả hàng',
+      'Bạn có chắc muốn đánh dấu đơn hàng này là trả hàng?',
       [
         { text: 'Không', style: 'cancel' },
-        { text: 'Có', onPress: () => cancelOrder() }
+        { text: 'Có', onPress: () => returnOrder() }
       ]
     );
   };
@@ -208,15 +208,15 @@ export default function OrderDetail() {
     );
   };
 
-  // Cancel order function
-  const cancelOrder = async () => {
+  // Return order function
+  const returnOrder = async () => {
     setUpdating(true);
     try {
-      await shipperApi.updateStatus(id, { order_status: 'Cancelled' });
-      Alert.alert('Thành công', 'Đã hủy đơn hàng');
+      await shipperApi.updateStatus(id, { order_status: 'Returned' });
+      Alert.alert('Thành công', 'Đã đánh dấu đơn hàng là trả hàng');
       router.back();
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể hủy đơn hàng');
+      Alert.alert('Lỗi', error.message || 'Không thể đánh dấu trả hàng');
     } finally {
       setUpdating(false);
     }
@@ -337,18 +337,12 @@ export default function OrderDetail() {
           <ThemedText style={styles.backButtonText}>←</ThemedText>
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>Chi tiết đơn hàng</ThemedText>
-        <TouchableOpacity style={styles.locationButton}>
-          <ThemedText style={styles.locationButtonText}>📍</ThemedText>
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Recipient Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionIcon}>
-              <ThemedText style={styles.iconText}>📍</ThemedText>
-            </View>
             <ThemedText style={styles.sectionTitle}>Người nhận</ThemedText>
                          <View style={styles.recipientActions}>
                <TouchableOpacity 
@@ -514,11 +508,11 @@ export default function OrderDetail() {
       {order.order_status === 'OutForDelivery' && (
         <View style={styles.actionButtons}>
           <TouchableOpacity 
-            style={styles.cancelButton} 
-            onPress={handleCancelOrder}
+            style={styles.returnButton} 
+            onPress={handleReturnOrder}
             disabled={updating}
           >
-            <ThemedText style={styles.cancelButtonText}>Hủy đơn hàng</ThemedText>
+            <ThemedText style={styles.returnButtonText}>Trả hàng</ThemedText>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -817,17 +811,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
   },
-  cancelButton: {
+  returnButton: {
     flex: 1,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#F44336',
+    backgroundColor: '#FF9800',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  cancelButtonText: {
+  returnButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
