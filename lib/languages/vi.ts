@@ -30,6 +30,11 @@ export const vi = {
     notifications: 'Thông báo',
   },
 
+  // Notifications
+  notifications: {
+    noNotifications: 'Không có thông báo nào',
+  },
+
   // Profile
   profile: {
     title: 'Thông tin cá nhân',

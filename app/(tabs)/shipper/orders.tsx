@@ -14,6 +14,13 @@ type Order = any;
 export default function ShipperOrders() {
   const { t } = useTranslation();
   
+  // Logic sắp xếp theo field timestamp cụ thể:
+  // - Tab Delivered: Đơn hàng mới hoàn thành xếp lên đầu (theo delivered_at - thời gian thực tế shipper hoàn thành)
+  // - Tab OutForDelivery: Đơn hàng mới bắt đầu giao xếp lên đầu (theo out_for_delivery_at)  
+  // - Tab Returned: Đơn hàng mới trả lại xếp lên đầu (theo returned_at)
+  // - Tab AwaitingPickup: Đơn hàng mới chuyển sang chờ lấy xếp lên đầu (theo awaiting_pickup_at)
+  // - Các tab khác: Đơn hàng mới tạo xếp lên đầu (theo pending_at hoặc createdAt)
+  
   const TABS = [
     { key: 'AwaitingPickup', label: t('orderStatus.awaitingPickup') },
     { key: 'OutForDelivery', label: t('orderStatus.outForDelivery') },
@@ -29,17 +36,111 @@ export default function ShipperOrders() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Force re-render
   const router = useRouter();
   const [verified, setVerified] = useState<boolean | null>(null);
 
   // Filter orders based on selected tab
   const filtered = useMemo(() => {
+    let filteredOrders = [];
+    
     if (tab === 'AwaitingPickup') {
       // Show all orders that can be claimed (unassigned or assigned to current shipper)
-      return orders.filter(o => o.order_status === 'AwaitingPickup');
+      filteredOrders = orders.filter(o => o.order_status === 'AwaitingPickup');
+    } else {
+      filteredOrders = orders.filter(o => o.order_status === tab);
     }
-    return orders.filter(o => o.order_status === tab);
-  }, [orders, tab]);
+    
+    // Debug: Log thông tin về orders để kiểm tra field names
+    if (filteredOrders.length > 0) {
+      console.log(`Tab ${tab}: Found ${filteredOrders.length} orders`);
+      console.log('Sample order fields:', Object.keys(filteredOrders[0]));
+      console.log('Sample order timestamps:', {
+        pending_at: filteredOrders[0].pending_at,
+        awaiting_pickup_at: filteredOrders[0].awaiting_pickup_at,
+        out_for_delivery_at: filteredOrders[0].out_for_delivery_at,
+        delivered_at: filteredOrders[0].delivered_at,
+        returned_at: filteredOrders[0].returned_at,
+        cancelled_at: filteredOrders[0].cancelled_at,
+        order_date: filteredOrders[0].order_date,
+        createdAt: filteredOrders[0].createdAt,
+        created_at: filteredOrders[0].created_at,
+        updatedAt: filteredOrders[0].updatedAt,
+        updated_at: filteredOrders[0].updated_at
+      });
+    }
+    
+    // Sắp xếp đơn hàng theo thời gian mới nhất
+    if (tab === 'Delivered') {
+      // Đơn hàng Delivered: sắp xếp theo thời gian thực tế hoàn thành giao hàng
+      const sorted = filteredOrders.sort((a, b) => {
+        // Ưu tiên field delivered_at (thời gian thực tế hoàn thành)
+        const timeA = a.delivered_at || a.order_date || a.updated_at || a.updatedAt || a.created_at || a.createdAt || 0;
+        const timeB = b.delivered_at || b.order_date || b.updated_at || b.updatedAt || b.created_at || b.createdAt || 0;
+        
+        // Convert sang timestamp
+        const timestampA = timeA ? new Date(timeA).getTime() : 0;
+        const timestampB = timeB ? new Date(timeB).getTime() : 0;
+        
+        // Debug log cho 2 đơn hàng đầu tiên
+        if (filteredOrders.indexOf(a) < 2) {
+          console.log(`Order ${a.order_id || a._id}: delivered_at=${a.delivered_at}, order_date=${a.order_date} -> ${timestampA}`);
+        }
+        if (filteredOrders.indexOf(b) < 2) {
+          console.log(`Order ${b.order_id || b._id}: delivered_at=${b.delivered_at}, order_date=${b.order_date} -> ${timestampB}`);
+        }
+        
+        // Sắp xếp giảm dần (mới nhất lên đầu)
+        return timestampB - timestampA;
+      });
+      
+      console.log('=== SORTED ORDERS (Delivered) - Using delivered_at ===');
+      sorted.slice(0, 5).forEach((order, index) => {
+        const deliveredTime = order.delivered_at;
+        const orderDate = order.order_date;
+        const pendingTime = order.pending_at;
+        const awaitingTime = order.awaiting_pickup_at;
+        const outForDeliveryTime = order.out_for_delivery_at;
+        
+        console.log(`${index + 1}. Order ${order.order_id || order._id}:`);
+        console.log(`   - pending_at: ${pendingTime} (${pendingTime ? new Date(pendingTime).toLocaleString() : 'N/A'})`);
+        console.log(`   - awaiting_pickup_at: ${awaitingTime} (${awaitingTime ? new Date(awaitingTime).toLocaleString() : 'N/A'})`);
+        console.log(`   - out_for_delivery_at: ${outForDeliveryTime} (${outForDeliveryTime ? new Date(outForDeliveryTime).toLocaleString() : 'N/A'})`);
+        console.log(`   - delivered_at: ${deliveredTime} (${deliveredTime ? new Date(deliveredTime).toLocaleString() : 'N/A'})`);
+        console.log(`   - order_date: ${orderDate} (${orderDate ? new Date(orderDate).toLocaleString() : 'N/A'})`);
+      });
+      
+      return sorted;
+    } else if (tab === 'OutForDelivery') {
+      // Đơn hàng đang giao: sắp xếp theo thời gian bắt đầu giao (out_for_delivery_at)
+      return filteredOrders.sort((a, b) => {
+        const timeA = a.out_for_delivery_at || a.updated_at || a.updatedAt || a.order_date || a.created_at || a.createdAt || 0;
+        const timeB = b.out_for_delivery_at || b.updated_at || b.updatedAt || b.order_date || b.created_at || b.createdAt || 0;
+        return new Date(timeB || 0).getTime() - new Date(timeA || 0).getTime();
+      });
+    } else if (tab === 'Returned') {
+      // Đơn hàng trả lại: sắp xếp theo thời gian trả lại mới nhất (returned_at)
+      return filteredOrders.sort((a, b) => {
+        const timeA = a.returned_at || a.updated_at || a.updatedAt || a.order_date || a.created_at || a.createdAt || 0;
+        const timeB = b.returned_at || b.updated_at || b.updatedAt || b.order_date || b.created_at || b.createdAt || 0;
+        return new Date(timeB || 0).getTime() - new Date(timeA || 0).getTime();
+      });
+    } else if (tab === 'AwaitingPickup') {
+      // Đơn hàng chờ lấy: sắp xếp theo thời gian chuyển sang AwaitingPickup (awaiting_pickup_at)
+      return filteredOrders.sort((a, b) => {
+        const timeA = a.awaiting_pickup_at || a.order_date || a.created_at || a.createdAt || 0;
+        const timeB = b.awaiting_pickup_at || b.order_date || b.created_at || b.createdAt || 0;
+        return new Date(timeB || 0).getTime() - new Date(timeA || 0).getTime();
+      });
+    } else {
+      // Các tab khác: sắp xếp theo thời gian tạo (pending_at hoặc createdAt)
+      return filteredOrders.sort((a, b) => {
+        const timeA = a.pending_at || a.order_date || a.created_at || a.createdAt || 0;
+        const timeB = b.pending_at || b.order_date || b.created_at || b.createdAt || 0;
+        return new Date(timeB || 0).getTime() - new Date(timeA || 0).getTime();
+      });
+    }
+  }, [orders, tab, forceUpdate]); // Thêm forceUpdate vào dependency
 
   // Fetch orders from shipper API
   const fetchOrders = async (pageNum: number = 1, append: boolean = false) => {
@@ -50,11 +151,29 @@ export default function ShipperOrders() {
     }
     
     try {
-      const res = await shipperApi.getOrders({ 
+      // Thêm tham số sắp xếp cho backend
+      const params: any = { 
         status: tab === 'AwaitingPickup' ? 'AwaitingPickup' : tab,
         page: pageNum,
         limit: 20
-      });
+      };
+      
+      // Thêm sort parameter cho tab Delivered để đơn mới hoàn thành lên đầu
+      if (tab === 'Delivered') {
+        params.sort = 'delivered_at'; // Sắp xếp theo thời gian hoàn thành thực tế
+        params.order = 'desc'; // Giảm dần (mới nhất lên đầu)
+      } else if (tab === 'OutForDelivery') {
+        params.sort = 'out_for_delivery_at'; // Sắp xếp theo thời gian bắt đầu giao
+        params.order = 'desc';
+      } else if (tab === 'Returned') {
+        params.sort = 'returned_at'; // Sắp xếp theo thời gian trả lại thực tế
+        params.order = 'desc';
+      } else {
+        params.sort = 'createdAt'; // Sắp xếp theo thời gian tạo
+        params.order = 'desc';
+      }
+      
+      const res = await shipperApi.getOrders(params);
       
       // Handle different response formats
       let list: any[] = [];
@@ -63,8 +182,6 @@ export default function ShipperOrders() {
       else if (res.orders) list = res.orders;
       else if (res.data && Array.isArray(res.data)) list = res.data;
       else list = res.orders || res.data || [];
-
-
 
       if (append) {
         setOrders(prev => [...prev, ...list]);
@@ -119,12 +236,31 @@ export default function ShipperOrders() {
   const handleUpdateStatus = async (order: Order, newStatus: string) => {
     if (updatingIds.includes(order._id)) return;
     
+    console.log(`=== UPDATING ORDER STATUS ===`);
+    console.log(`Order ID: ${order._id}`);
+    console.log(`Current status: ${order.order_status}`);
+    console.log(`New status: ${newStatus}`);
+    console.log(`Current timestamps:`, {
+      pending_at: order.pending_at,
+      awaiting_pickup_at: order.awaiting_pickup_at,
+      out_for_delivery_at: order.out_for_delivery_at,
+      delivered_at: order.delivered_at,
+      returned_at: order.returned_at
+    });
+    
     setUpdatingIds(prev => [...prev, order._id]);
     try {
-      await shipperApi.updateStatus(order._id, { order_status: newStatus });
+      const response = await shipperApi.updateStatus(order._id, { order_status: newStatus });
+      console.log(`Status update response:`, response);
+      
       Alert.alert(t('common.success'), t('messages.statusUpdated'));
-      fetchOrders(1, false);
+      
+      // Refresh orders để lấy data mới với timestamp mới
+      console.log(`Refreshing orders after status update...`);
+      await fetchOrders(1, false);
+      
     } catch (err: any) {
+      console.error(`Status update failed:`, err);
       Alert.alert(t('common.error'), err?.message || t('orders.updateStatusError'));
     } finally {
       setUpdatingIds(prev => prev.filter(id => id !== order._id));
@@ -195,6 +331,7 @@ export default function ShipperOrders() {
 
       {/* Orders List */}
       <FlatList
+        key={`${tab}-${filtered.length}-${forceUpdate}`} // Force re-render khi tab, orders hoặc forceUpdate thay đổi
         data={filtered}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
@@ -203,7 +340,7 @@ export default function ShipperOrders() {
             onOpen={handleOpenOrder}
             onAccept={handleAcceptOrder}
             onReject={handleRejectOrder}
-                         onUpdateStatus={(order) => handleUpdateStatus(order, 'Delivered')}
+            onUpdateStatus={handleUpdateStatus}
             updatingIds={updatingIds}
             t={t}
           />
@@ -247,7 +384,7 @@ function OrderCard({
   onOpen: (o: Order) => void; 
   onAccept: (o: Order) => void; 
   onReject: (o: Order) => void;
-  onUpdateStatus: (o: Order) => void;
+  onUpdateStatus: (o: Order, status: string) => void;
   updatingIds: string[];
   t: (key: string) => string;
 }) {
@@ -382,14 +519,14 @@ function OrderCard({
           <>
             <TouchableOpacity 
               style={[styles.updateStatus, { backgroundColor: '#4CAF50', opacity: isUpdating ? 0.6 : 1 }]}
-                             onPress={() => onUpdateStatus(item)}
+              onPress={() => onUpdateStatus(item, 'Delivered')}
               disabled={isUpdating}
             >
               <Text style={styles.buttonText}>{t('actions.markDelivered')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.updateStatus, { backgroundColor: '#FF5722', opacity: isUpdating ? 0.6 : 1 }]}
-                             onPress={() => onUpdateStatus(item)}
+              onPress={() => onUpdateStatus(item, 'Returned')}
               disabled={isUpdating}
             >
               <Text style={styles.buttonText}>{t('actions.markReturned')}</Text>
@@ -547,7 +684,6 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   loadingMoreText: {
-    marginTop: 8,
     fontSize: 14,
     color: '#666',
   }

@@ -59,6 +59,15 @@ export const API_ENDPOINTS = {
   ACCEPT_ORDER: '/api/shipper/orders',
   REJECT_ORDER: '/api/shipper/orders',
   UPDATE_STATUS: '/api/shipper/orders',
+  GET_COMPLETED_ORDERS: '/api/shipper/completed-orders',
+  
+  // Shipper Rating Endpoints - using /api/shipper-ratings prefix
+  GET_MY_RATINGS: '/api/shipper-ratings/my-ratings',
+  GET_SHIPPER_RATINGS: '/api/shipper-ratings/shipper',
+  CREATE_RATING: '/api/shipper-ratings/rate',
+  UPDATE_RATING: '/api/shipper-ratings/update',
+  DELETE_RATING: '/api/shipper-ratings/delete',
+  GET_RATING_PROMPTS: '/api/shipper-ratings/prompts',
 };
 
 // Error Messages

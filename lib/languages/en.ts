@@ -30,6 +30,11 @@ export const en = {
     notifications: 'Notifications',
   },
 
+  // Notifications
+  notifications: {
+    noNotifications: 'No notifications',
+  },
+
   // Profile
   profile: {
     title: 'Personal Information',

@@ -11,7 +11,8 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const isProfile = pathname.startsWith('/profile') || pathname.includes('/profile');
   const isOrders = pathname.startsWith('/shipper') || pathname.includes('/shipper');
-  const isMessages = pathname.startsWith('/messages') || pathname.includes('/messages');
+  const isNotifications = pathname.startsWith('/notifications') || pathname.includes('/notifications');
+
   const bottomHeight = Platform.OS === 'android' ? 84 : 94;
 
   return (
@@ -25,9 +26,9 @@ export default function TabsLayout() {
             <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.orders')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/messages')}>
-            <IconSymbol name="chat" size={26} color={isMessages ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
-            <Text style={[styles.bottomTabText, { color: isMessages ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Tin nhắn</Text>
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/notifications')}>
+            <IconSymbol name="notifications" size={26} color={isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.notifications')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/profile')}>
