@@ -11,6 +11,7 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const isProfile = pathname.startsWith('/profile') || pathname.includes('/profile');
   const isOrders = pathname.startsWith('/shipper') || pathname.includes('/shipper');
+  const isNotifications = pathname.startsWith('/notifications') || pathname.includes('/notifications');
   const bottomHeight = Platform.OS === 'android' ? 84 : 94;
 
   return (
@@ -22,6 +23,11 @@ export default function TabsLayout() {
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/shipper/orders')}>
             <IconSymbol name="inventory" size={22} color={isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
             <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.orders')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/notifications')}>
+            <IconSymbol name="notifications" size={22} color={isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
+            <Text style={[styles.bottomTabText, { color: isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>Thông báo</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/profile')}>
