@@ -62,6 +62,15 @@ export const en = {
     activityStats: 'Activity Statistics',
     completedRequests: 'Completed Requests',
     averageRating: 'Average Rating',
+    myRatings: 'My Ratings',
+    ratingStatistics: 'Rating Statistics',
+    totalRatings: 'Total Ratings',
+    deliveredOrders: 'Delivered Orders',
+    ratingPercentage: 'Rating Rate',
+    ratingDistribution: 'Rating Distribution',
+    star: 'star',
+    orders: 'orders',
+    of: 'of',
   },
 
   // Language

@@ -1,19 +1,20 @@
 import { useAuth } from '@/lib/auth';
 import { shipperApi } from '@/lib/shipperApi';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function Login() {
@@ -78,9 +79,23 @@ export default function Login() {
             router.replace('/(tabs)/shipper/orders');
           }
         } else {
-          // Regular user
-          console.log('Regular user, redirecting to main tabs');
-          router.replace('/(tabs)');
+          // Không cho phép user thường vào ứng dụng - đây là app shipper
+          console.log('Regular user not allowed - this is a shipper app');
+          Alert.alert(
+            'Không thể đăng nhập',
+            'Ứng dụng này chỉ dành cho shipper. Tài khoản của bạn không có quyền truy cập.',
+            [
+              {
+                text: 'Đăng xuất',
+                onPress: async () => {
+                  // Đăng xuất user
+                  await signIn({ token: '', refreshToken: '', user: null });
+                  // Reset form
+                  setFormData({ email: '', password: '' });
+                }
+              }
+            ]
+          );
         }
       } else {
         Alert.alert('Lỗi', 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
@@ -112,70 +127,81 @@ export default function Login() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+    <LinearGradient
+      colors={['#667eea', '#764ba2']}
+      style={styles.container}
+    >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <StatusBar barStyle="light-content" backgroundColor="#667eea" />
 
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/images/ShelfStackerDelivery.png')}
-          style={styles.logoImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.pageTitle}>Đăng nhập</Text>
-      </View>
-
-      <View style={styles.formContainer}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(value) => handleInputChange('email', value)}
-            placeholder="Nhập email của bạn"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor="#999"
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../assets/images/ShelfStackerDelivery.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
           />
+          <Text style={styles.pageTitle}>Đăng nhập</Text>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Mật khẩu</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.password}
-            onChangeText={(value) => handleInputChange('password', value)}
-            placeholder="Nhập mật khẩu"
-            secureTextEntry
-            placeholderTextColor="#999"
-          />
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(value) => handleInputChange('email', value)}
+                placeholder="Nhập email của bạn"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor="rgba(255, 255, 255, 0.7)"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Mật khẩu</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={formData.password}
+                onChangeText={(value) => handleInputChange('password', value)}
+                placeholder="Nhập mật khẩu"
+                secureTextEntry
+                placeholderTextColor="rgba(255, 255, 255, 0.7)"
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, loading && styles.disabledButton]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#667eea" />
+            ) : (
+              <Text style={styles.loginButtonText}>Đăng nhập</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.registerLink} onPress={goToRegister}>
+            <Text style={styles.registerLinkText}>
+              Chưa có tài khoản? <Text style={styles.registerLinkTextBold}>Đăng ký ngay</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.loginButton, loading && styles.disabledButton]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.loginButtonText}>Đăng nhập</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.registerLink} onPress={goToRegister}>
-          <Text style={styles.registerLinkText}>
-            Chưa có tài khoản? <Text style={styles.registerLinkTextBold}>Đăng ký ngay</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+  },
+  scrollView: {
+    flex: 1,
   },
   logoContainer: {
     alignItems: 'center',
@@ -191,7 +217,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
   },
   formContainer: {
     paddingHorizontal: 20,
@@ -202,36 +228,37 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
     marginBottom: 8,
     fontWeight: '500',
   },
+  inputWrapper: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
     fontSize: 16,
-    backgroundColor: 'white',
-    color: '#333',
+    color: '#fff',
   },
   loginButton: {
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderRadius: 25,
     padding: 16,
     alignItems: 'center',
     marginTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   disabledButton: {
     opacity: 0.6,
   },
   loginButtonText: {
-    color: 'white',
+    color: '#667eea',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -241,10 +268,11 @@ const styles = StyleSheet.create({
   },
   registerLinkText: {
     fontSize: 16,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   registerLinkTextBold: {
-    color: '#4A90E2',
+    color: '#fff',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

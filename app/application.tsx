@@ -1,4 +1,3 @@
-import BottomTabs from '@/components/BottomTabs';
 import { useAuth } from '@/lib/auth';
 import { shipperApi } from '@/lib/shipperApi';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,16 +5,15 @@ import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect } from 'react';
 import {
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 
 export default function Application() {
   const router = useRouter();
   const { refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = React.useState<'orders' | 'profile'>('orders');
 
   useEffect(() => {
     let mounted = true;
@@ -30,7 +28,7 @@ export default function Application() {
         if (!mounted) return;
         if (latest && latest.shipper_verified === true) {
           clearInterval(id);
-          router.replace('/shipper/orders');
+          router.replace('/(tabs)/shipper/orders');
         }
       } catch {
         // ignore
@@ -81,21 +79,15 @@ export default function Application() {
             <Text style={styles.infoText}>Bạn sẽ nhận thông báo khi có kết quả</Text>
           </View>
         </View>
+
+        {/* Thông báo không thể tương tác */}
+        <View style={styles.warningContainer}>
+          <Ionicons name="information-circle" size={24} color="#FF6B6B" />
+          <Text style={styles.warningText}>
+            Bạn không thể tương tác với ứng dụng cho đến khi được admin xét duyệt
+          </Text>
+        </View>
       </View>
-
-      {/* Bottom Navigation Tabs */}
-
-      <BottomTabs 
-        activeTab="profile"
-        onTabPress={(tab) => {
-          if (tab === 'profile') {
-            router.replace('/profile');
-          } else if (tab === 'orders') {
-            router.replace('/application');
-          }
-
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -170,6 +162,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     marginLeft: 12,
+    flex: 1,
+  },
+  warningContainer: {
+    marginTop: 30,
+    backgroundColor: '#FFF3CD',
+    borderRadius: 12,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#856404',
+    marginLeft: 10,
     flex: 1,
   },
 

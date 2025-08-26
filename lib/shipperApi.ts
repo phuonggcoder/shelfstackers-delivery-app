@@ -319,18 +319,41 @@ export const shipperApi = {
 
   // API lấy thống kê shipper
   async getShipperStats() {
+    console.log('🔍 shipperApi.getShipperStats - Method called');
     try {
       const response = await this.getCompletedOrders({ limit: 1 });
       if (response && response.stats) {
-        return {
+        // Tính toán rating từ orders nếu có
+        let calculatedAvgRating = response.stats.average_rating || 0;
+        
+        // Nếu có orders và average_rating = 0, tính toán từ orders
+        if (response.orders && response.orders.length > 0 && calculatedAvgRating === 0) {
+          console.log('🔍 shipperApi.getShipperStats - Rating calculation - Orders found:', response.orders.length);
+          
+          const ratings = response.orders
+            .filter(order => order.shipper_rating && order.shipper_rating > 0)
+            .map(order => order.shipper_rating);
+          
+          console.log('🔍 shipperApi.getShipperStats - Rating calculation - Valid ratings:', ratings);
+          
+          if (ratings.length > 0) {
+            calculatedAvgRating = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+            console.log('🔍 shipperApi.getShipperStats - Rating calculation - Calculated avg:', calculatedAvgRating);
+          }
+        }
+        
+        const result = {
           stats: {
             total_completed_orders: response.stats.total_completed_orders || 0,
-            average_rating: response.stats.average_rating || 0,
+            average_rating: calculatedAvgRating,
             total_rated_orders: response.stats.total_rated_orders || 0,
             rating_percentage: response.stats.rating_percentage || 0,
-            total_rating: response.stats.total_rating || 0
+            total_rating: calculatedAvgRating * (response.stats.total_rated_orders || 0)
           }
         };
+        
+        console.log('🔍 shipperApi.getShipperStats - Final result:', result);
+        return result;
       }
       return { stats: { total_completed_orders: 0, average_rating: 0, total_rated_orders: 0, rating_percentage: 0, total_rating: 0 } };
     } catch (error) {

@@ -63,6 +63,15 @@ export const vi = {
     activityStats: 'Thống kê hoạt động',
     completedRequests: 'Yêu cầu đã hoàn thành',
     averageRating: 'Đánh giá trung bình',
+    myRatings: 'Đánh giá của tôi',
+    ratingStatistics: 'Thống Kê Đánh Giá',
+    totalRatings: 'Tổng đánh giá',
+    deliveredOrders: 'Đơn hàng đã giao',
+    ratingPercentage: 'Tỷ lệ đánh giá',
+    ratingDistribution: 'Phân bố đánh giá',
+    star: 'sao',
+    orders: 'đơn hàng',
+    of: 'trên',
   },
 
   // Language

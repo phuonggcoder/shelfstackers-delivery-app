@@ -1,5 +1,6 @@
+
 import { useAuth } from '@/lib/auth';
-import { shipperApi } from '@/lib/shipperApi';
+import ShipperRatingService from '@/lib/shipperRatingService';
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -47,16 +48,16 @@ export default function Profile() {
   const fetchShipperStats = React.useCallback(async () => {
     setLoadingStats(true);
     try {
-      console.log('🔄 Fetching shipper stats...');
-      const response = await shipperApi.getShipperStats();
-      console.log('📊 API Response:', response);
+      console.log('🔄 Fetching shipper stats via ShipperRatingService...');
+      const response = await ShipperRatingService.getShipperRating(user?.id || user?._id, token);
+      console.log('📊 ShipperRatingService Response:', response);
       
       if (response && response.stats) {
         const stats = response.stats;
-        const completedOrders = stats.total_completed_orders || 0;
-        const avgRating = stats.average_rating || 0;
+        const completedOrders = stats.delivered_orders || 0;
+        const avgRating = stats.avg_rating || 0;
         
-        console.log('✅ Setting stats:', { completedOrders, avgRating });
+        console.log('✅ Setting stats from ShipperRatingService:', { completedOrders, avgRating });
         setDeliveredOrders(completedOrders);
         setAverageRating(parseFloat(avgRating.toString()));
       } else {
@@ -72,12 +73,11 @@ export default function Profile() {
     } finally {
       setLoadingStats(false);
     }
-  }, []);
+  }, [user, token]);
 
   // Fetch thống kê khi component mount
   React.useEffect(() => {
     if (user && user.roles && user.roles.includes('shipper')) {
-      shipperApi.setToken(token);
       fetchShipperStats();
     }
   }, [user, token, fetchShipperStats]);
@@ -103,8 +103,6 @@ export default function Profile() {
           <Text style={styles.statsTitle}>{t('profile.activityStats')}</Text>
         </View>
         
-
-        
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <View style={styles.statIconContainer}>
@@ -120,7 +118,11 @@ export default function Profile() {
             </View>
           </View>
 
-          <View style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard} 
+            onPress={() => router.push('/my-ratings')}
+            activeOpacity={0.7}
+          >
             <View style={styles.statIconContainer}>
               <Text style={styles.statIcon}>⭐</Text>
             </View>
@@ -132,8 +134,10 @@ export default function Profile() {
               )}
               <Text style={styles.statLabel}>{t('profile.averageRating')}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
+
+
 
         {/* Tùy chọn */}
         <Text style={styles.sectionTitle}>{t('profile.options')}</Text>
@@ -315,4 +319,5 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     fontWeight: '500',
   },
+
 });
