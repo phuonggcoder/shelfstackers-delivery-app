@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/lib/auth';
 import '@/lib/i18n'; // Import i18n configuration
+import { NotificationProvider } from '@/lib/notificationProvider';
 import * as React from 'react';
 
 export default function RootLayout() {
@@ -19,21 +20,23 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="register" options={{ headerShown: false }} />
-          <Stack.Screen name="application" options={{ 
-            headerShown: false,
-            statusBarStyle: 'dark',
-            statusBarBackgroundColor: '#FFFFFF'
-          }} />
-          <Stack.Screen name="splash" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <NotificationProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="register" options={{ headerShown: false }} />
+            <Stack.Screen name="application" options={{ 
+              headerShown: false,
+              statusBarStyle: 'dark',
+              statusBarBackgroundColor: '#FFFFFF'
+            }} />
+            <Stack.Screen name="splash" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

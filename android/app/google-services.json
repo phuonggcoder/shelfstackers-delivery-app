@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "860064515825",
+    "project_id": "shelfstacker-delivery",
+    "storage_bucket": "shelfstacker-delivery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:860064515825:android:b84442455cfde4f7f44b50",
+        "android_client_info": {
+          "package_name": "com.anonymous.shelfstackersdeliveryapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYYD8XYv3Mverx4TuKJvNWDjA5DcQvoEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
