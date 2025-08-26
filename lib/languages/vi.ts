@@ -25,6 +25,7 @@ export const vi = {
   navigation: {
     home: 'Trang chủ',
     orders: 'Đơn hàng',
+
     profile: 'Cá nhân',
     settings: 'Cài đặt',
     notifications: 'Thông báo',
@@ -59,6 +60,9 @@ export const vi = {
     needPhotoPermission: 'Bạn cần cấp quyền truy cập thư viện ảnh',
     avatarUploadFailed: 'Upload avatar thất bại',
     options: 'Tùy chọn',
+    activityStats: 'Thống kê hoạt động',
+    completedRequests: 'Yêu cầu đã hoàn thành',
+    averageRating: 'Đánh giá trung bình',
   },
 
   // Language
@@ -128,6 +132,7 @@ export const vi = {
     cannotMakeCall: 'Không thể thực hiện cuộc gọi',
     cannotOpenSMSApp: 'Không thể mở ứng dụng tin nhắn',
     noShippingAddress: 'Không tìm thấy địa chỉ giao hàng',
+
   },
 
   // Order Status

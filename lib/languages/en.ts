@@ -59,6 +59,9 @@ export const en = {
     needPhotoPermission: 'You need to grant photo library access permission',
     avatarUploadFailed: 'Failed to upload avatar',
     options: 'Options',
+    activityStats: 'Activity Statistics',
+    completedRequests: 'Completed Requests',
+    averageRating: 'Average Rating',
   },
 
   // Language

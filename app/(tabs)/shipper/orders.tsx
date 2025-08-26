@@ -486,6 +486,11 @@ function OrderCard({
                     item.shipping_address_snapshot?.address_detail ||
                     item.address || 
                     t('orders.noAddress')}
+            coordinates={item.shipping_address_snapshot?.coordinates ? {
+              latitude: item.shipping_address_snapshot.coordinates.coordinates[1], // latitude
+              longitude: item.shipping_address_snapshot.coordinates.coordinates[0] // longitude
+            } : undefined}
+            showDirectionsButton={true}
           />
         </View>
 

@@ -72,26 +72,35 @@ export class MapsService {
    */
   static async openDirectionsToCoordinates(lat: number, lng: number): Promise<boolean> {
     try {
+      console.log('🗺️ MapsService: Opening directions to coordinates:', { lat, lng });
+      
       let url = '';
       
       if (Platform.OS === 'ios') {
         url = `https://maps.apple.com/maps?daddr=${lat},${lng}`;
+        console.log('🍎 iOS: Using Apple Maps URL:', url);
       } else {
         url = `https://maps.google.com/maps?daddr=${lat},${lng}`;
+        console.log('🤖 Android: Using Google Maps URL:', url);
       }
       
+      console.log('🔗 Checking if URL can be opened...');
       const canOpen = await Linking.canOpenURL(url);
+      console.log('✅ Can open URL:', canOpen);
+      
       if (canOpen) {
+        console.log('🚀 Opening native maps app...');
         await Linking.openURL(url);
         return true;
       } else {
         // Fallback to web browser
+        console.log('🌐 Fallback: Opening web browser...');
         const webUrl = `https://maps.google.com/maps?daddr=${lat},${lng}`;
         await Linking.openURL(webUrl);
         return true;
       }
     } catch (error) {
-      console.error('Failed to open directions to coordinates:', error);
+      console.error('❌ Failed to open directions to coordinates:', error);
       return false;
     }
   }
