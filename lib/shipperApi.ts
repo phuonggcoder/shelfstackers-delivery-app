@@ -4,12 +4,20 @@ let _token: string | null = null;
 
 export const shipperApi = {
   setToken(token: string | null) {
+    console.log('🔑 shipperApi.setToken called with:', !!token);
+    console.log('🔑 Token value:', token);
     _token = token;
+    console.log('✅ _token set to:', _token ? `[${_token.substring(0, 20)}...]` : 'null');
   },
 
   async request(path: string, opts: any = {}) {
     const headers: any = { 'Content-Type': 'application/json' };
-    if (_token) headers.Authorization = `Bearer ${_token}`;
+    if (_token) {
+      headers.Authorization = `Bearer ${_token}`;
+      console.log('🔑 Using token in request:', !!_token);
+    } else {
+      console.log('❌ No token available in request');
+    }
     
     try {
       const url = `${APP_CONFIG.API_BASE_URL}${path}`;
@@ -40,7 +48,38 @@ export const shipperApi = {
         const json = await res.json();
         try { console.log('[API RESPONSE]', url, 'status:', res.status, 'body:', json); } catch { }
         return json;
-      } catch {
+      } catch (jsonError: any) {
+        // Xử lý lỗi ObjectId trong JSON parsing
+        if (jsonError.message && jsonError.message.includes('ObjectId')) {
+          console.log('⚠️ ObjectId error in JSON parsing, trying text response');
+          try {
+            const textResponse = await res.text();
+            console.log('[API RESPONSE TEXT]', url, 'status:', res.status, 'body:', textResponse);
+            
+            // Thử parse lại với xử lý đặc biệt
+            if (textResponse.includes('"stats"')) {
+              // Nếu có stats, trả về response cơ bản
+              return {
+                stats: {
+                  total_completed_orders: 0,
+                  average_rating: 0,
+                  total_rated_orders: 0,
+                  rating_percentage: 0,
+                  total_rating: 0
+                },
+                pagination: {
+                  total: 0
+                }
+              };
+            }
+            
+            return null;
+          } catch (textError) {
+            console.log('⚠️ Error reading text response:', textError);
+            return null;
+          }
+        }
+        
         try { console.log('[API RESPONSE] no-json', url, 'status:', res.status); } catch { }
         return null;
       }
@@ -184,13 +223,21 @@ export const shipperApi = {
   },
 
   // Shipper Endpoints - using /api/shipper prefix
-  async getOrders(params: { status?: string; page?: number; limit?: number } = {}) {
-    const { status, page = 1, limit = 50 } = params;
+  async getOrders(params: { 
+    status?: string; 
+    page?: number; 
+    limit?: number;
+    sort?: string;
+    order?: string;
+  } = {}) {
+    const { status, page = 1, limit = 50, sort, order } = params;
     const queryParams = new URLSearchParams();
     
     if (status) queryParams.append('status', status);
     if (page) queryParams.append('page', page.toString());
     if (limit) queryParams.append('limit', limit.toString());
+    if (sort) queryParams.append('sort', sort);
+    if (order) queryParams.append('order', order);
     
     const query = queryParams.toString();
     const q = query ? '?' + query : '';
@@ -222,6 +269,84 @@ export const shipperApi = {
     }
     // If nothing returned, return empty array so UI shows fallback message
     return [];
+  },
+
+
+
+
+
+  // API lấy đơn hàng đã hoàn thành
+  async getCompletedOrders(params: { page?: number; limit?: number } = {}) {
+    const { page = 1, limit = 50 } = params;
+    const queryParams = new URLSearchParams();
+    
+    if (page) queryParams.append('page', page.toString());
+    if (limit) queryParams.append('limit', limit.toString());
+    
+    const query = queryParams.toString();
+    const q = query ? '?' + query : '';
+    
+    try {
+      const response = await this.request(`${API_ENDPOINTS.GET_COMPLETED_ORDERS}${q}`);
+      return response;
+    } catch (error: any) {
+      console.error('Error fetching completed orders:', error);
+      
+      // Nếu lỗi ObjectId, trả về dữ liệu mặc định
+      if (error.message && error.message.includes('ObjectId')) {
+        console.log('ObjectId error detected, returning fallback data');
+        return {
+          orders: [],
+          stats: {
+            total_completed_orders: 0,
+            total_rated_orders: 0,
+            rating_percentage: 0,
+            average_rating: 0,
+            total_rating: 0
+          },
+          pagination: {
+            page: 1,
+            limit: 50,
+            total: 0,
+            pages: 0
+          }
+        };
+      }
+      
+      throw error;
+    }
+  },
+
+  // API lấy thống kê shipper
+  async getShipperStats() {
+    try {
+      const response = await this.getCompletedOrders({ limit: 1 });
+      if (response && response.stats) {
+        return {
+          stats: {
+            total_completed_orders: response.stats.total_completed_orders || 0,
+            average_rating: response.stats.average_rating || 0,
+            total_rated_orders: response.stats.total_rated_orders || 0,
+            rating_percentage: response.stats.rating_percentage || 0,
+            total_rating: response.stats.total_rating || 0
+          }
+        };
+      }
+      return { stats: { total_completed_orders: 0, average_rating: 0, total_rated_orders: 0, rating_percentage: 0, total_rating: 0 } };
+    } catch (error) {
+      console.error('Error fetching shipper stats:', error);
+      
+      // Luôn trả về dữ liệu mặc định thay vì crash
+      return { 
+        stats: { 
+          total_completed_orders: 0, 
+          average_rating: 0, 
+          total_rated_orders: 0, 
+          rating_percentage: 0, 
+          total_rating: 0 
+        } 
+      };
+    }
   },
 
   async getOrder(id: string) {
@@ -300,5 +425,39 @@ export const shipperApi = {
   async getAssignedOrders(page: number = 1, limit: number = 50) {
     // For assigned orders, we want orders that are not AwaitingPickup
     return this.getOrders({ page, limit });
+  },
+
+  // Shipper Rating Endpoints
+  async getMyRatings() {
+    return this.request(API_ENDPOINTS.GET_MY_RATINGS);
+  },
+
+  async getShipperRatings(shipperId: string) {
+    return this.request(`${API_ENDPOINTS.GET_SHIPPER_RATINGS}/${shipperId}`);
+  },
+
+  async createRating(orderId: string, rating: number, comment?: string) {
+    return this.request(API_ENDPOINTS.CREATE_RATING, {
+      method: 'POST',
+      body: JSON.stringify({ order_id: orderId, rating, comment })
+    });
+  },
+
+  async updateRating(ratingId: string, rating: number, comment?: string) {
+    return this.request(API_ENDPOINTS.UPDATE_RATING, {
+      method: 'PUT',
+      body: JSON.stringify({ rating_id: ratingId, rating, comment })
+    });
+  },
+
+  async deleteRating(ratingId: string) {
+    return this.request(API_ENDPOINTS.DELETE_RATING, {
+      method: 'DELETE',
+      body: JSON.stringify({ rating_id: ratingId })
+    });
+  },
+
+  async getRatingPrompts() {
+    return this.request(API_ENDPOINTS.GET_RATING_PROMPTS);
   },
 };

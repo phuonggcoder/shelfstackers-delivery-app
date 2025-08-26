@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
   REJECT_ORDER: '/api/shipper/orders',
   UPDATE_STATUS: '/api/shipper/orders',
   GET_COMPLETED_ORDERS: '/api/shipper/completed-orders',
+
   
   // Shipper Rating Endpoints - using /api/shipper-ratings prefix
   GET_MY_RATINGS: '/api/shipper-ratings/my-ratings',

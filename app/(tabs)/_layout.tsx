@@ -26,6 +26,8 @@ export default function TabsLayout() {
             <Text style={[styles.bottomTabText, { color: isOrders ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.orders')}</Text>
           </TouchableOpacity>
 
+
+
           <TouchableOpacity style={styles.bottomTab} onPress={() => router.push('/notifications')}>
             <IconSymbol name="notifications" size={26} color={isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault} />
             <Text style={[styles.bottomTabText, { color: isNotifications ? Colors.light.tabIconInfo : Colors.light.tabIconDefault }]}>{t('navigation.notifications')}</Text>

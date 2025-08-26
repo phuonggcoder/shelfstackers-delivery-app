@@ -28,9 +28,17 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
   // Xử lý địa chỉ khi component mount
   useEffect(() => {
     const processAddress = async () => {
+      console.log('📍 AddressWithDirections: Processing address and coordinates:', {
+        address,
+        coordinates,
+        hasCoordinates: !!coordinates
+      });
+      
       if (address && address !== 'Không có địa chỉ') {
+        console.log('📝 Using provided address:', address);
         setDisplayAddress(address);
       } else if (coordinates) {
+        console.log('🗺️ Using coordinates to get address:', coordinates);
         setLoading(true);
         try {
           const addressFromCoords = await getAddressFromCoordinates(
@@ -38,18 +46,21 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
             coordinates.longitude
           );
           if (addressFromCoords) {
+            console.log('✅ Got address from coordinates:', addressFromCoords);
             setDisplayAddress(addressFromCoords);
           } else {
+            console.warn('⚠️ Could not get address from coordinates');
             setDisplayAddress('Không thể xác định địa chỉ');
           }
         } catch (error) {
-          console.error('Failed to get address from coordinates:', error);
+          console.error('❌ Failed to get address from coordinates:', error);
           setDisplayAddress('Không thể xác định địa chỉ');
         } finally {
           setLoading(false);
         }
       } else {
         // Nếu không có địa chỉ, hiển thị thông báo
+        console.log('❌ No address or coordinates available');
         setDisplayAddress('Không có địa chỉ');
       }
     };
@@ -60,9 +71,15 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
   // Xử lý khi tap vào nút chỉ đường
   const handleDirectionsPress = async () => {
     if (coordinates) {
+      // ✅ ƯU TIÊN: Mở maps với tọa độ chính xác
+      console.log('🗺️ Opening directions to coordinates:', coordinates);
       await openDirectionsToCoordinates(coordinates.latitude, coordinates.longitude);
     } else if (displayAddress && displayAddress !== 'Không thể xác định địa chỉ') {
+      // Fallback: Mở maps với địa chỉ text
+      console.log('📍 Opening directions to address:', displayAddress);
       await openDirections(displayAddress);
+    } else {
+      console.warn('⚠️ No coordinates or address available for directions');
     }
   };
 

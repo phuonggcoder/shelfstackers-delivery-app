@@ -1,20 +1,33 @@
 import { useAuth } from '@/lib/auth';
-import { API_ENDPOINTS, APP_CONFIG } from '@/lib/config';
+import { shipperApi } from '@/lib/shipperApi';
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Profile() {
-  const { user, signOut } = useAuth();
+  const auth = useAuth(); // Lấy toàn bộ auth object
+  const { user, signOut } = auth; // Destructure từ auth
   const router = useRouter();
   const { t } = useTranslation();
+  
+  // Debug auth object để tìm token
+  console.log('=== AUTH DEBUG ===');
+  console.log('Auth object:', auth);
+  console.log('Auth keys:', Object.keys(auth));
+  console.log('User from destructure:', user);
+  
+  // Tìm token trong auth object
+  const token = auth.token; // Sử dụng field token chính xác
+  console.log('🔑 Found token:', !!token);
+  console.log('🔑 Token value:', token);
   
   // State cho thống kê shipper
   const [deliveredOrders, setDeliveredOrders] = React.useState(0);
   const [averageRating, setAverageRating] = React.useState(0);
-  const [loadingStats, setLoadingStats] = React.useState(true);
+  const [loadingStats, setLoadingStats] = React.useState(false);
+
 
   // Dữ liệu mẫu người dùng
   const sampleUser = {
@@ -27,70 +40,47 @@ export default function Profile() {
     avatar: 'https://i.imgur.com/8Km9tLL.png',
   };
 
-  // Dùng user từ context nếu có, nếu không dùng sampleUser
+    // Dùng user từ context nếu có, nếu không dùng sampleUser
   const displayUser = user || sampleUser;
 
   // Hàm fetch thống kê từ API
   const fetchShipperStats = React.useCallback(async () => {
+    setLoadingStats(true);
     try {
-      setLoadingStats(true);
+      console.log('🔄 Fetching shipper stats...');
+      const response = await shipperApi.getShipperStats();
+      console.log('📊 API Response:', response);
       
-      // Gọi API từ shipperRouter.js để lấy thống kê đơn hàng đã hoàn thành
-      const response = await fetch(`${APP_CONFIG.API_BASE_URL}${API_ENDPOINTS.GET_COMPLETED_ORDERS}`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('API Response Status:', response.status);
-        console.log('Full API Response:', data);
+      if (response && response.stats) {
+        const stats = response.stats;
+        const completedOrders = stats.total_completed_orders || 0;
+        const avgRating = stats.average_rating || 0;
         
-        if (data.stats) {
-          console.log('Stats data:', data.stats);
-          
-          // Cập nhật số đơn hàng đã hoàn thành
-          const completedCount = data.stats.total_completed_orders || 0;
-          console.log('Setting completed orders to:', completedCount);
-          setDeliveredOrders(completedCount);
-          
-          // Cập nhật rating trung bình
-          const avgRating = data.stats.average_rating || 0;
-          console.log('Setting average rating to:', avgRating);
-          setAverageRating(parseFloat(avgRating));
-          
-          console.log('Total rated orders:', data.stats.total_rated_orders);
-          console.log('Rating percentage:', data.stats.rating_percentage);
-        } else {
-          console.log('API response missing stats data');
-          setDeliveredOrders(0);
-          setAverageRating(0);
-        }
+        console.log('✅ Setting stats:', { completedOrders, avgRating });
+        setDeliveredOrders(completedOrders);
+        setAverageRating(parseFloat(avgRating.toString()));
       } else {
-        console.log('API request failed with status:', response.status);
+        console.log('⚠️ No stats in response, using defaults');
         setDeliveredOrders(0);
         setAverageRating(0);
       }
     } catch (error) {
-      console.error('Error in fetchShipperStats:', error);
-      // Fallback về số liệu mặc định
+      console.error('❌ Error fetching shipper stats:', error);
+      // Luôn set giá trị mặc định khi có lỗi
       setDeliveredOrders(0);
       setAverageRating(0);
     } finally {
       setLoadingStats(false);
     }
-  }, [user?.token]);
+  }, []);
 
-  // Fetch thống kê shipper khi component mount
+  // Fetch thống kê khi component mount
   React.useEffect(() => {
     if (user && user.roles && user.roles.includes('shipper')) {
+      shipperApi.setToken(token);
       fetchShipperStats();
-    } else {
-      setLoadingStats(false);
     }
-  }, [user, fetchShipperStats]);
+  }, [user, token, fetchShipperStats]);
 
   return (
     <View style={styles.container}>
@@ -98,17 +88,10 @@ export default function Profile() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loadingStats}
-            onRefresh={fetchShipperStats}
-            colors={['#4A90E2']}
-            tintColor="#4A90E2"
-          />
-        }
       >
         {/* Tiêu đề trên cùng */}
         <Text style={styles.topTitle}>{t('profile.title')}</Text>
+        
         {/* Avatar lớn và căn giữa */}
         <View style={styles.avatarContainer}>
           <Image source={{ uri: displayUser.avatar || sampleUser.avatar }} style={styles.avatarLarge} />
@@ -117,17 +100,11 @@ export default function Profile() {
 
         {/* Thống kê - Số đơn hàng và đánh giá */}
         <View style={styles.statsHeader}>
-          <Text style={styles.statsTitle}>Thống kê hoạt động</Text>
-          <TouchableOpacity 
-            style={styles.refreshButton} 
-            onPress={fetchShipperStats}
-            disabled={loadingStats}
-          >
-            <Text style={styles.refreshButtonText}>
-              {loadingStats ? '🔄' : '🔄'}
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.statsTitle}>{t('profile.activityStats')}</Text>
         </View>
+        
+
+        
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <View style={styles.statIconContainer}>
@@ -139,7 +116,7 @@ export default function Profile() {
               ) : (
                 <Text style={styles.statNumber}>{deliveredOrders}</Text>
               )}
-              <Text style={styles.statLabel}>Đơn hàng đã hoàn thành</Text>
+              <Text style={styles.statLabel}>{t('profile.completedRequests')}</Text>
             </View>
           </View>
 
@@ -153,7 +130,7 @@ export default function Profile() {
               ) : (
                 <Text style={styles.statNumber}>{averageRating.toFixed(1)}</Text>
               )}
-              <Text style={styles.statLabel}>Đánh giá trung bình</Text>
+              <Text style={styles.statLabel}>{t('profile.averageRating')}</Text>
             </View>
           </View>
         </View>
@@ -178,6 +155,7 @@ export default function Profile() {
             <FontAwesome name="user" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
             <Text style={styles.optionText}>{t('profile.updateAccount')}</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity
             style={styles.optionButton}
             onPress={() => router.push('/profile-detail')}
@@ -193,6 +171,7 @@ export default function Profile() {
             <Ionicons name="key" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
             <Text style={styles.optionText}>{t('profile.changePassword')}</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity 
             style={styles.optionButton}
             onPress={() => router.push('/language')}
@@ -200,6 +179,7 @@ export default function Profile() {
             <FontAwesome name="language" size={20} color="#4A90E2" style={{ marginRight: 12 }} />
             <Text style={styles.optionText}>{t('profile.changeLanguage')}</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity style={styles.optionButton} onPress={async () => {
             await signOut();
             router.replace('/login');
@@ -236,72 +216,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 32,
     marginBottom: 24,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  statsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222',
-  },
-  refreshButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f8ff',
-  },
-  refreshButtonText: {
-    fontSize: 18,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    alignItems: 'center',
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f0f8ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  statIcon: {
-    fontSize: 24,
-  },
-  statContent: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 16,
   },
   avatarLarge: {
     width: 120,
@@ -347,6 +261,58 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     color: '#222',
+    fontWeight: '500',
+  },
+  statsHeader: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statIconContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statIcon: {
+    fontSize: 30,
+  },
+  statContent: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#4A90E2',
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 13,
     fontWeight: '500',
   },
 });
