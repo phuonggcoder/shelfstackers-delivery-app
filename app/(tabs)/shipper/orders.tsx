@@ -1,10 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { AddressWithDirections } from '@/components/AddressWithDirections';
+
+
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { shipperApi } from '@/lib/shipperApi';
@@ -436,6 +438,43 @@ function OrderCard({
   const canClaim = item.canClaim || !item.assigned_shipper_id || item.assigned_shipper_id === 'current_shipper_id';
   const isUpdating = updatingIds.includes(item._id);
 
+  // Lấy tọa độ từ đơn hàng theo thứ tự ưu tiên
+  const getCoordinates = () => {
+    const snapshot = item.shipping_address_snapshot;
+    
+    // Ưu tiên 1: OSM data (OpenStreetMap)
+    if (snapshot?.osm?.lat && snapshot?.osm?.lng) {
+      return {
+        latitude: snapshot.osm.lat,
+        longitude: snapshot.osm.lng,
+        source: 'osm'
+      };
+    }
+    
+    // Ưu tiên 2: Location coordinates (GeoJSON)
+    if (snapshot?.location?.coordinates && snapshot.location.coordinates.length === 2) {
+      const [lng, lat] = snapshot.location.coordinates;
+      return {
+        latitude: lat,
+        longitude: lng,
+        source: 'location'
+      };
+    }
+    
+    // Ưu tiên 3: Manual coordinates
+    if (snapshot?.latitude && snapshot?.longitude) {
+      return {
+        latitude: snapshot.latitude,
+        longitude: snapshot.longitude,
+        source: 'manual'
+      };
+    }
+    
+    return null;
+  };
+
+  const coordinates = getCoordinates();
+
   return (
     <TouchableOpacity style={styles.card} onPress={() => onOpen(item)}>
       <View style={styles.rowBetween}>
@@ -480,18 +519,16 @@ function OrderCard({
 
         {/* Address */}
         <View style={{ marginTop: 8 }}>
-          <AddressWithDirections 
-            address={item.summary?.customerAddress || 
-                    item.shipping_address_snapshot?.fullAddress || 
-                    item.shipping_address_snapshot?.address_detail ||
-                    item.address || 
-                    t('orders.noAddress')}
-            coordinates={item.shipping_address_snapshot?.coordinates ? {
-              latitude: item.shipping_address_snapshot.coordinates.coordinates[1], // latitude
-              longitude: item.shipping_address_snapshot.coordinates.coordinates[0] // longitude
-            } : undefined}
-            showDirectionsButton={true}
-          />
+          <View style={styles.addressContainer}>
+            <Ionicons name="home" size={16} color="#666" />
+            <ThemedText style={styles.addressText}>
+              {item.summary?.customerAddress || 
+               item.shipping_address_snapshot?.fullAddress || 
+               item.shipping_address_snapshot?.address_detail ||
+               item.address || 
+               t('orders.noAddress')}
+            </ThemedText>
+          </View>
         </View>
 
         {/* Status */}
@@ -510,6 +547,43 @@ function OrderCard({
 
       {/* Actions */}
       <View style={styles.actionsRow}>
+        {/* Nút chỉ đường thông minh - gộp chức năng mở maps và chỉ đường */}
+        <TouchableOpacity 
+          style={styles.directionsButton}
+          onPress={() => {
+            if (coordinates) {
+              // Nếu có tọa độ: Mở maps với tọa độ chính xác
+              const url = Platform.OS === 'ios'
+                ? `https://maps.apple.com/?daddr=${coordinates.latitude},${coordinates.longitude}`
+                : `https://www.google.com/maps/dir/?api=1&destination=${coordinates.latitude},${coordinates.longitude}`;
+              Linking.openURL(url);
+            } else {
+              // Nếu không có tọa độ: Mở maps với địa chỉ text
+              const address = item.summary?.customerAddress || 
+                             item.shipping_address_snapshot?.fullAddress || 
+                             item.shipping_address_snapshot?.address_detail ||
+                             item.address;
+              
+              if (address && address !== t('orders.noAddress')) {
+                const encodedAddress = encodeURIComponent(address);
+                const url = Platform.OS === 'ios'
+                  ? `https://maps.apple.com/?daddr=${encodedAddress}`
+                  : `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+                Linking.openURL(url);
+              }
+            }
+          }}
+        >
+          <Ionicons 
+            name={coordinates ? "navigate" : "paper-plane"} 
+            size={16} 
+            color="#4A90E2" 
+          />
+          <ThemedText style={styles.directionsButtonText}>
+            Chỉ đường
+          </ThemedText>
+        </TouchableOpacity>
+
         {canClaim && item.order_status === 'AwaitingPickup' && (
           <TouchableOpacity 
             style={[styles.accept, { opacity: isUpdating ? 0.6 : 1 }]}
@@ -653,22 +727,73 @@ const styles = StyleSheet.create({
     gap: 8, 
     marginTop: 12 
   },
+  addressSection: {
+    marginBottom: 16,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 8,
+  },
+  addressText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+  },
+  addressText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginLeft: 8,
+    flex: 1,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  directionsButtonText: {
+    color: '#4A90E2',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+
   accept: { 
     backgroundColor: '#2196F3', 
     paddingHorizontal: 16, 
     paddingVertical: 10, 
     borderRadius: 8 
   },
-  reject: { 
-    backgroundColor: '#F44336', 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 8 
-  },
-  updateStatus: {
-    paddingHorizontal: 12,
+  mapsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
     paddingVertical: 8,
-    borderRadius: 6
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  mapsButtonText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
   },
   buttonText: {
     color: '#fff',
@@ -691,5 +816,11 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 14,
     color: '#666',
+  },
+  updateStatus: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginRight: 8,
   }
 });

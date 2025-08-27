@@ -2,7 +2,7 @@ import { useDirections } from '@/hooks/useDirections';
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
 interface AddressWithDirectionsProps {
@@ -11,76 +11,147 @@ interface AddressWithDirectionsProps {
     latitude: number;
     longitude: number;
   };
+  // Thêm props mới để hỗ trợ đầy đủ dữ liệu từ API
+  orderCoordinates?: {
+    coordinates?: [number, number]; // [longitude, latitude] - GeoJSON format
+    latitude?: number;
+    longitude?: number;
+    source?: string;
+  };
+  osmData?: {
+    lat: number;
+    lng: number;
+    displayName: string;
+  };
   showDirectionsButton?: boolean;
+  showCoordinatesInfo?: boolean; // Hiển thị thông tin tọa độ
   style?: any;
 }
 
 export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
   address,
   coordinates,
+  orderCoordinates,
+  osmData,
   showDirectionsButton = true,
+  showCoordinatesInfo = false,
   style
 }) => {
   const [displayAddress, setDisplayAddress] = useState<string>('');
+  const [finalCoordinates, setFinalCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+    source: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const { openDirections, openDirectionsToCoordinates, getAddressFromCoordinates } = useDirections();
 
-  // Xử lý địa chỉ khi component mount
+  // Xử lý tọa độ theo thứ tự ưu tiên từ API documentation
   useEffect(() => {
-    const processAddress = async () => {
-      console.log('📍 AddressWithDirections: Processing address and coordinates:', {
-        address,
+    const processCoordinates = () => {
+      console.log('📍 AddressWithDirections: Processing coordinates with priority order:', {
+        osmData,
+        orderCoordinates,
         coordinates,
-        hasCoordinates: !!coordinates
+        address
       });
-      
-      if (address && address !== 'Không có địa chỉ') {
-        console.log('📝 Using provided address:', address);
-        setDisplayAddress(address);
-      } else if (coordinates) {
-        console.log('🗺️ Using coordinates to get address:', coordinates);
-        setLoading(true);
-        try {
-          const addressFromCoords = await getAddressFromCoordinates(
-            coordinates.latitude,
-            coordinates.longitude
-          );
-          if (addressFromCoords) {
-            console.log('✅ Got address from coordinates:', addressFromCoords);
-            setDisplayAddress(addressFromCoords);
-          } else {
-            console.warn('⚠️ Could not get address from coordinates');
-            setDisplayAddress('Không thể xác định địa chỉ');
-          }
-        } catch (error) {
-          console.error('❌ Failed to get address from coordinates:', error);
-          setDisplayAddress('Không thể xác định địa chỉ');
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        // Nếu không có địa chỉ, hiển thị thông báo
-        console.log('❌ No address or coordinates available');
-        setDisplayAddress('Không có địa chỉ');
+
+      // Ưu tiên 1: OSM Data (OpenStreetMap) - độ chính xác cao nhất
+      if (osmData?.lat && osmData?.lng) {
+        console.log('✅ Using OSM coordinates:', { lat: osmData.lat, lng: osmData.lng });
+        setFinalCoordinates({
+          latitude: osmData.lat,
+          longitude: osmData.lng,
+          source: 'osm'
+        });
+        setDisplayAddress(osmData.displayName || address || '');
+        return;
       }
+
+      // Ưu tiên 2: Order coordinates (GeoJSON format)
+      if (orderCoordinates?.coordinates && orderCoordinates.coordinates.length === 2) {
+        const [lng, lat] = orderCoordinates.coordinates; // GeoJSON: [longitude, latitude]
+        console.log('✅ Using order GeoJSON coordinates:', { lat, lng });
+        setFinalCoordinates({
+          latitude: lat,
+          longitude: lng,
+          source: 'location'
+        });
+        setDisplayAddress(address || '');
+        return;
+      }
+
+      // Ưu tiên 3: Manual coordinates
+      if (orderCoordinates?.latitude && orderCoordinates?.longitude) {
+        console.log('✅ Using manual coordinates:', { 
+          lat: orderCoordinates.latitude, 
+          lng: orderCoordinates.longitude 
+        });
+        setFinalCoordinates({
+          latitude: orderCoordinates.latitude,
+          longitude: orderCoordinates.longitude,
+          source: 'manual'
+        });
+        setDisplayAddress(address || '');
+        return;
+      }
+
+      // Ưu tiên 4: Legacy coordinates prop
+      if (coordinates?.latitude && coordinates?.longitude) {
+        console.log('✅ Using legacy coordinates:', coordinates);
+        setFinalCoordinates({
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          source: 'legacy'
+        });
+        setDisplayAddress(address || '');
+        return;
+      }
+
+      // Fallback: Không có tọa độ
+      console.log('❌ No coordinates available, using address only');
+      setFinalCoordinates(null);
+      setDisplayAddress(address || 'Không có địa chỉ');
     };
 
-    processAddress();
-  }, [address, coordinates, getAddressFromCoordinates]);
+    processCoordinates();
+  }, [osmData, orderCoordinates, coordinates, address]);
 
   // Xử lý khi tap vào nút chỉ đường
   const handleDirectionsPress = async () => {
-    if (coordinates) {
+    if (finalCoordinates) {
       // ✅ ƯU TIÊN: Mở maps với tọa độ chính xác
-      console.log('🗺️ Opening directions to coordinates:', coordinates);
-      await openDirectionsToCoordinates(coordinates.latitude, coordinates.longitude);
-    } else if (displayAddress && displayAddress !== 'Không thể xác định địa chỉ') {
+      console.log('🗺️ Opening directions to coordinates:', finalCoordinates);
+      await openDirectionsToCoordinates(finalCoordinates.latitude, finalCoordinates.longitude);
+    } else if (displayAddress && displayAddress !== 'Không có địa chỉ') {
       // Fallback: Mở maps với địa chỉ text
       console.log('📍 Opening directions to address:', displayAddress);
       await openDirections(displayAddress);
     } else {
       console.warn('⚠️ No coordinates or address available for directions');
+      Alert.alert('Thông báo', 'Không có thông tin để chỉ đường');
     }
+  };
+
+  // Hiển thị thông tin tọa độ nếu được yêu cầu
+  const renderCoordinatesInfo = () => {
+    if (!showCoordinatesInfo || !finalCoordinates) return null;
+
+    return (
+      <View style={styles.coordinatesInfo}>
+        <View style={styles.coordinatesRow}>
+          <Ionicons name="location" size={14} color="#4A90E2" />
+          <ThemedText style={styles.coordinatesLabel}>
+            GPS: {finalCoordinates.latitude.toFixed(6)}, {finalCoordinates.longitude.toFixed(6)}
+          </ThemedText>
+        </View>
+        <ThemedText style={styles.sourceText}>
+          Nguồn: {finalCoordinates.source === 'osm' ? 'OpenStreetMap' : 
+                   finalCoordinates.source === 'location' ? 'GeoJSON' : 
+                   finalCoordinates.source === 'manual' ? 'Thủ công' : 'Legacy'}
+        </ThemedText>
+      </View>
+    );
   };
 
   if (loading) {
@@ -99,16 +170,25 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
         <ThemedText style={styles.addressText}>
           {displayAddress || 'Không có địa chỉ'}
         </ThemedText>
-
+        
+        {/* Thông tin tọa độ (nếu được yêu cầu) */}
+        {renderCoordinatesInfo()}
       </View>
       
       {/* Nút chỉ đường */}
-      {showDirectionsButton && (coordinates || displayAddress) && (
+      {showDirectionsButton && (finalCoordinates || displayAddress) && (
         <TouchableOpacity 
-          style={styles.directionsButton} 
+          style={[
+            styles.directionsButton,
+            finalCoordinates && styles.directionsButtonWithCoords
+          ]} 
           onPress={handleDirectionsPress}
         >
-          <Ionicons name="paper-plane" size={16} color="#2196F3" />
+          <Ionicons 
+            name={finalCoordinates ? "navigate" : "paper-plane"} 
+            size={16} 
+            color={finalCoordinates ? "#4A90E2" : "#2196F3"} 
+          />
         </TouchableOpacity>
       )}
     </View>
@@ -118,7 +198,7 @@ export const AddressWithDirections: React.FC<AddressWithDirectionsProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 8,
   },
   addressContainer: {
@@ -143,5 +223,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 24,
     minHeight: 24
+  },
+  directionsButtonWithCoords: {
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#4A90E2',
+  },
+  coordinatesInfo: {
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  coordinatesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  coordinatesLabel: {
+    fontSize: 11,
+    color: '#4A90E2',
+    fontFamily: 'monospace',
+    marginLeft: 4,
+  },
+  sourceText: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginLeft: 18,
   },
 });

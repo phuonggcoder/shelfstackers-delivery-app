@@ -1,4 +1,5 @@
 import { AddressWithDirections } from '@/components/AddressWithDirections';
+import { OrderMapView } from '@/components/OrderMapView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useDirections } from '@/hooks/useDirections';
@@ -402,11 +403,35 @@ export default function OrderDetail() {
                          order.address}
                 coordinates={order.shipping_address_snapshot?.coordinates || 
                            order.address_id?.coordinates}
+                // Thêm props mới để hỗ trợ đầy đủ dữ liệu từ API
+                orderCoordinates={order.shipping_address_snapshot?.coordinates ? {
+                  coordinates: order.shipping_address_snapshot.coordinates.coordinates,
+                  latitude: order.shipping_address_snapshot.latitude,
+                  longitude: order.shipping_address_snapshot.longitude
+                } : undefined}
+                osmData={order.shipping_address_snapshot?.osm ? {
+                  lat: order.shipping_address_snapshot.osm.lat,
+                  lng: order.shipping_address_snapshot.osm.lng,
+                  displayName: order.shipping_address_snapshot.osm.displayName
+                } : undefined}
                 showDirectionsButton={false}
+                showCoordinatesInfo={true}
                 style={styles.recipientAddress}
               />
             </View>
           </View>
+        </View>
+
+        {/* Thêm section thông tin địa điểm với bản đồ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIcon}>
+              <ThemedText style={styles.iconText}>🗺️</ThemedText>
+            </View>
+            <ThemedText style={styles.sectionTitle}>Thông tin địa điểm giao hàng</ThemedText>
+          </View>
+          
+          <OrderMapView order={order} />
         </View>
 
         {/* Product List Section */}
